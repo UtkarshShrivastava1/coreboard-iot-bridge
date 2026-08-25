@@ -14,7 +14,8 @@ const {
   CreateKeysAndCertificateCommand, 
   AttachThingPrincipalCommand, 
   AttachPolicyCommand,
-  CreatePolicyCommand
+  CreatePolicyCommand,
+  UpdateThingCommand
 } = require('@aws-sdk/client-iot');
 const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
@@ -760,16 +761,35 @@ app.post('/api/superadmin/requests/approve', authenticateToken, requireRole(['SU
 
   try {
     // A. Create Thing (Asset registration)
-    await iotClient.send(new CreateThingCommand({
-      thingName: cleanDeviceId,
-      attributePayload: {
-        attributes: {
-          tenantId: cleanTenantId,
-          deviceType: deviceType
+    try {
+      await iotClient.send(new CreateThingCommand({
+        thingName: cleanDeviceId,
+        attributePayload: {
+          attributes: {
+            tenantId: cleanTenantId,
+            deviceType: deviceType
+          }
         }
+      }));
+      console.log(`[AWS IoT] Registered Thing successfully: ${cleanDeviceId}`);
+    } catch (createError) {
+      if (createError.name === 'ResourceAlreadyExistsException' || (createError.message && createError.message.includes('already exists'))) {
+        console.log(`[AWS IoT] Thing ${cleanDeviceId} already exists in account with different attributes. Updating attributes...`);
+        await iotClient.send(new UpdateThingCommand({
+          thingName: cleanDeviceId,
+          attributePayload: {
+            attributes: {
+              tenantId: cleanTenantId,
+              deviceType: deviceType
+            },
+            merge: true
+          }
+        }));
+        console.log(`[AWS IoT] Thing attributes updated successfully for: ${cleanDeviceId}`);
+      } else {
+        throw createError;
       }
-    }));
-    console.log(`[AWS IoT] Registered Thing successfully: ${cleanDeviceId}`);
+    }
 
     // B. Create X.509 Cryptographic Key Pair and Certificate
     const certResponse = await iotClient.send(new CreateKeysAndCertificateCommand({
@@ -887,16 +907,35 @@ app.post('/api/superadmin/tenants/:tenantId/devices/provision', authenticateToke
 
   try {
     // 1. Create Thing dynamically in AWS IoT
-    await iotClient.send(new CreateThingCommand({
-      thingName: cleanDeviceId,
-      attributePayload: {
-        attributes: {
-          tenantId: cleanTenantId,
-          deviceType: deviceType
+    try {
+      await iotClient.send(new CreateThingCommand({
+        thingName: cleanDeviceId,
+        attributePayload: {
+          attributes: {
+            tenantId: cleanTenantId,
+            deviceType: deviceType
+          }
         }
+      }));
+      console.log(`[AWS IoT] Registered Thing successfully: ${cleanDeviceId}`);
+    } catch (createError) {
+      if (createError.name === 'ResourceAlreadyExistsException' || (createError.message && createError.message.includes('already exists'))) {
+        console.log(`[AWS IoT] Thing ${cleanDeviceId} already exists in account with different attributes. Updating attributes...`);
+        await iotClient.send(new UpdateThingCommand({
+          thingName: cleanDeviceId,
+          attributePayload: {
+            attributes: {
+              tenantId: cleanTenantId,
+              deviceType: deviceType
+            },
+            merge: true
+          }
+        }));
+        console.log(`[AWS IoT] Thing attributes updated successfully for: ${cleanDeviceId}`);
+      } else {
+        throw createError;
       }
-    }));
-    console.log(`[AWS IoT] Registered Thing successfully: ${cleanDeviceId}`);
+    }
 
     // 2. Generate unique X.509 Cryptographic Client Credentials
     const certResponse = await iotClient.send(new CreateKeysAndCertificateCommand({
