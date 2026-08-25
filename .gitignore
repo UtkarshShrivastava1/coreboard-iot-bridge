@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+/dist/
+/.env
+
+# Python Virtual Environment
+/venv/
+__pycache__/
+*.pyc
+
+# IDEs & System Files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Certificates & Archive files
+backend/certs/*.pem
+backend/certs/*.crt
+backend/certs/*.key
+certs.rar

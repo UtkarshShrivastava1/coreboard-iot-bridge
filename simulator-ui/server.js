@@ -1,0 +1,316 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const mqtt = require('mqtt');
+const cors = require('cors');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+app.use(cors());
+app.use(express.json());
+
+// Active MQTT connection pool: thingName -> { mqttClient, autoInterval, deviceType, tenantId, lastData }
+const connectionPool = new Map();
+
+// Helper: Build multi-tenant topic structure
+function getPublishTopic(tenantId, thingName) {
+  const cleanTenant = (tenantId || 'default-tenant').trim().toLowerCase();
+  const cleanThing = thingName.trim();
+  return `tenants/${cleanTenant}/devices/${cleanThing}/pub`;
+}
+
+io.on('connection', (socket) => {
+  console.log(`[Simulator WS] Web client connected: ${socket.id}`);
+
+  // Send list of currently active simulated devices to newly connected UI client
+  const activeDevices = [];
+  connectionPool.forEach((val, thingName) => {
+    activeDevices.append({
+      thingName,
+      deviceType: val.deviceType,
+      tenantId: val.tenantId,
+      status: val.mqttClient.connected ? 'connected' : 'disconnected',
+      isAuto: !!val.autoInterval,
+      lastData: val.lastData
+    });
+  });
+  // Note: we can map connectionPool keys to array
+  const formattedActive = Array.from(connectionPool.entries()).map(([thingName, val]) => ({
+    thingName,
+    deviceType: val.deviceType,
+    tenantId: val.tenantId,
+    status: val.mqttClient.connected ? 'connected' : 'disconnected',
+    isAuto: !!val.autoInterval,
+    lastData: val.lastData
+  }));
+  socket.emit('active_devices_list', formattedActive);
+
+  // 1. Connect Device over AWS mTLS MQTT
+  socket.on('connect_device', (payload) => {
+    const { endpoint, tenantId, thingName, deviceType, certPem, keyPem } = payload;
+    const cleanThing = thingName.trim();
+
+    console.log(`[Simulator WS] Request to connect device: ${cleanThing} under tenant: ${tenantId}`);
+
+    // If already connected, disconnect it first
+    if (connectionPool.has(cleanThing)) {
+      const existing = connectionPool.get(cleanThing);
+      if (existing.autoInterval) clearInterval(existing.autoInterval);
+      existing.mqttClient.end();
+      connectionPool.delete(cleanThing);
+    }
+
+    // Default Amazon CA Certificate (can also be overridden if needed)
+    // We read it from our backend certs folder or fallback to a standard Root CA PEM string
+    let caCert;
+    try {
+      caCert = require('fs').readFileSync(
+        require('path').resolve(__dirname, '../backend/certs/AmazonRootCA1.pem')
+      );
+    } catch (e) {
+      console.warn(`[Simulator Server] Failed to read Root CA file. Falling back to default root CA string.`);
+      caCert = process.env.AMAZON_CA_PEM; // fallback in case certs directory is missing
+    }
+
+    const mqttOptions = {
+      host: endpoint || process.env.AWS_ENDPOINT || 'a3jn1jb4u5t66x-ats.iot.ap-south-1.amazonaws.com',
+      port: 8883,
+      protocol: 'mqtts',
+      clientId: cleanThing,
+      ca: caCert,
+      cert: certPem,
+      key: keyPem,
+      rejectUnauthorized: true,
+      keepalive: 30,
+      reconnectPeriod: 0 // Do not auto-reconnect if it fails initial handshake to make errors obvious
+    };
+
+    try {
+      const mqttClient = mqtt.connect(mqttOptions);
+
+      mqttClient.on('connect', () => {
+        console.log(`[AWS MQTT] Device ${cleanThing} connected successfully to AWS IoT Core.`);
+        
+        connectionPool.set(cleanThing, {
+          mqttClient,
+          deviceType: deviceType || 'pump',
+          tenantId: tenantId || 'default-tenant',
+          autoInterval: null,
+          lastData: {}
+        });
+
+        const subTopic = `tenants/${tenantId || 'default-tenant'}/devices/${cleanThing}/sub`;
+        mqttClient.subscribe(subTopic, (err) => {
+          if (err) {
+            console.error(`[AWS MQTT] Device ${cleanThing} failed to subscribe to sub topic:`, err);
+          } else {
+            console.log(`[AWS MQTT] Device ${cleanThing} subscribed to sub topic: ${subTopic}`);
+          }
+        });
+
+        io.emit('device_status', {
+          thingName: cleanThing,
+          status: 'connected',
+          message: 'Connected to AWS IoT Core successfully.'
+        });
+      });
+
+      mqttClient.on('message', (topic, message) => {
+        console.log(`[AWS MQTT] Simulated Device ${cleanThing} received message on topic: ${topic}`);
+        try {
+          const payload = JSON.parse(message.toString());
+          // Forward received actuation commands to the Web client via Socket.io
+          io.emit('actuator_command', {
+            thingName: cleanThing,
+            topic,
+            payload
+          });
+        } catch (e) {
+          console.error(`[AWS MQTT] Failed to parse message for simulated device ${cleanThing}:`, e.message);
+        }
+      });
+
+      mqttClient.on('error', (err) => {
+        console.error(`[AWS MQTT] Device ${cleanThing} connection error:`, err.message);
+        socket.emit('device_status', {
+          thingName: cleanThing,
+          status: 'error',
+          error: err.message
+        });
+        mqttClient.end();
+        connectionPool.delete(cleanThing);
+      });
+
+      mqttClient.on('close', () => {
+        console.log(`[AWS MQTT] Device ${cleanThing} connection closed.`);
+        io.emit('device_status', {
+          thingName: cleanThing,
+          status: 'disconnected'
+        });
+      });
+
+    } catch (err) {
+      console.error(`[Simulator Server] Connect exception:`, err);
+      socket.emit('device_status', {
+        thingName: cleanThing,
+        status: 'error',
+        error: err.message
+      });
+    }
+  });
+
+  // 2. Publish Telemetry Payload (Sliders or Fault button triggers)
+  socket.on('publish_telemetry', (payload) => {
+    const { thingName, data } = payload;
+    const cleanThing = thingName.trim();
+
+    if (!connectionPool.has(cleanThing)) {
+      return socket.emit('log_message', {
+        thingName: cleanThing,
+        type: 'error',
+        text: 'Cannot publish telemetry: device is not connected.'
+      });
+    }
+
+    const dev = connectionPool.get(cleanThing);
+    const publishTopic = getPublishTopic(dev.tenantId, cleanThing);
+
+    const messagePayload = {
+      device_id: cleanThing,
+      device_type: dev.deviceType,
+      timestamp: new Date().toISOString(),
+      ...data
+    };
+
+    dev.lastData = data;
+
+    dev.mqttClient.publish(publishTopic, JSON.stringify(messagePayload), (err) => {
+      if (err) {
+        console.error(`[Simulator MQTT] Publish failed for ${cleanThing}:`, err);
+        socket.emit('log_message', {
+          thingName: cleanThing,
+          type: 'error',
+          text: `Publish failed: ${err.message}`
+        });
+      } else {
+        socket.emit('log_message', {
+          thingName: cleanThing,
+          type: 'publish',
+          topic: publishTopic,
+          payload: messagePayload
+        });
+      }
+    });
+  });
+
+  // 3. Toggle Auto-Simulation Mode
+  socket.on('toggle_auto', (payload) => {
+    const { thingName, isAuto, baselineData } = payload;
+    const cleanThing = thingName.trim();
+
+    if (!connectionPool.has(cleanThing)) return;
+
+    const dev = connectionPool.get(cleanThing);
+
+    if (isAuto) {
+      // Clear any existing interval
+      if (dev.autoInterval) clearInterval(dev.autoInterval);
+
+      console.log(`[Simulator Engine] Auto-simulation started for device: ${cleanThing}`);
+      
+      // Keep baseline values in memory to add random noise to
+      dev.lastData = baselineData || dev.lastData;
+
+      // Start periodic publisher
+      dev.autoInterval = setInterval(() => {
+        const publishTopic = getPublishTopic(dev.tenantId, cleanThing);
+        
+        // Generate simulated telemetry based on device type with noise
+        const simulated = { ...dev.lastData };
+        if (dev.deviceType === 'pump') {
+          // flow rate noise (±0.5), temp noise (±0.2)
+          simulated.flow_rate = parseFloat((Number(simulated.flow_rate || 25.0) + (Math.random() - 0.5)).toFixed(1));
+          simulated.temperature = parseFloat((Number(simulated.temperature || 32.0) + (Math.random() - 0.5) * 0.4).toFixed(1));
+        } else if (dev.deviceType === 'temp_sensor') {
+          simulated.temperature = parseFloat((Number(simulated.temperature || 24.0) + (Math.random() - 0.5) * 0.3).toFixed(1));
+          simulated.humidity = parseFloat((Number(simulated.humidity || 55.0) + (Math.random() - 0.5)).toFixed(1));
+        } else if (dev.deviceType === 'pressure_sensor') {
+          simulated.pressure = parseFloat((Number(simulated.pressure || 4.0) + (Math.random() - 0.5) * 0.1).toFixed(2));
+        } else if (dev.deviceType === 'power_meter') {
+          simulated.power = parseFloat((Number(simulated.power || 1.1) + (Math.random() - 0.5) * 0.05).toFixed(3));
+          simulated.voltage = parseFloat((Number(simulated.voltage || 230.0) + (Math.random() - 0.5) * 0.8).toFixed(1));
+          simulated.current = parseFloat((Number(simulated.current || 4.8) + (Math.random() - 0.5) * 0.1).toFixed(2));
+        }
+
+        const messagePayload = {
+          device_id: cleanThing,
+          device_type: dev.deviceType,
+          timestamp: new Date().toISOString(),
+          ...simulated
+        };
+
+        dev.mqttClient.publish(publishTopic, JSON.stringify(messagePayload), (err) => {
+          if (err) {
+            console.error(`[Auto Publish Error] ${cleanThing}:`, err.message);
+          } else {
+            socket.emit('log_message', {
+              thingName: cleanThing,
+              type: 'publish',
+              topic: publishTopic,
+              payload: messagePayload
+            });
+          }
+        });
+      }, 3000); // Send data every 3 seconds
+
+      socket.emit('auto_status', { thingName: cleanThing, isAuto: true });
+
+    } else {
+      // Disable auto mode
+      if (dev.autoInterval) {
+        clearInterval(dev.autoInterval);
+        dev.autoInterval = null;
+      }
+      console.log(`[Simulator Engine] Auto-simulation stopped for device: ${cleanThing}`);
+      socket.emit('auto_status', { thingName: cleanThing, isAuto: false });
+    }
+  });
+
+  // 4. Disconnect Device
+  socket.on('disconnect_device', (payload) => {
+    const { thingName } = payload;
+    const cleanThing = thingName.trim();
+
+    if (connectionPool.has(cleanThing)) {
+      const dev = connectionPool.get(cleanThing);
+      if (dev.autoInterval) clearInterval(dev.autoInterval);
+      dev.mqttClient.end();
+      connectionPool.delete(cleanThing);
+      console.log(`[Simulator Server] Disconnected device: ${cleanThing}`);
+      socket.emit('device_status', {
+        thingName: cleanThing,
+        status: 'disconnected'
+      });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`[Simulator WS] Client disconnected: ${socket.id}`);
+  });
+});
+
+const PORT = process.env.SIMULATOR_PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`========================================`);
+  console.log(`⚡ Universal Simulator Backend Engine ⚡`);
+  console.log(`Listening on http://localhost:${PORT}`);
+  console.log(`========================================`);
+});

@@ -1,0 +1,28 @@
+{
+  "name": "coreboard-iot-bridge-parent",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "simulator-ui",
+    "simulator-ui/client",
+    "frontend-SuperAdmin"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "dev:superadmin": "npm run dev --workspace=frontend-SuperAdmin",
+    "start:superadmin": "npm run preview --workspace=frontend-SuperAdmin",
+    "bridge": "npm start --workspace=coreboard-iot-bridge-backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:superadmin": "npm run build --workspace=frontend-SuperAdmin",
+    "build:simulator": "npm run build --workspace=simulator-ui-client",
+    "simulator:server": "npm start --workspace=simulator-ui",
+    "simulator:client": "npm run dev --workspace=simulator-ui-client",
+    "simulator": "concurrently \"npm run simulator:server\" \"npm run simulator:client\"",
+    "dev:all": "concurrently -n \"backend,frontend,superadmin,simulator\" -c \"cyan,magenta,yellow,blue\" \"npm run bridge\" \"npm run dev\" \"npm run dev:superadmin\" \"npm run simulator\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4"
+  }
+}
