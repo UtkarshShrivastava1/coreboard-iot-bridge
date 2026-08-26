@@ -134,3 +134,12 @@ Devices can be registered in two ways:
 1. The hardware begins publishing sensor readings to `tenants/<tenant_id>/devices/<device_id>/pub`.
 2. The client monitors the values live at `http://localhost:5173`.
 3. To actuate, the client toggles a switch on the dashboard. The command is transmitted to the device's sub topic (`.../sub`), triggering the hardware relay.
+
+### Phase 5: Hardware Integration Specifications (JSON & MQTT)
+To make hardware setups completely frictionless for installation representatives:
+1. Under the **Devices** tab on the **Tenant Dashboard** (`http://localhost:5173`), look at the **Registered Devices Registry** table.
+2. In the rightmost column, each device row features a **`[View MQTT & JSON]`** button.
+3. Clicking this button opens a modal showing:
+   * The exact **Uplink (Publish)** and **Downlink (Subscribe)** topics required for that specific device ID.
+   * A copy-paste ready **JSON Body Payload** customized with the matching schema keys for that device type (e.g. `flow_rate` for pumps, `lock_state` for door locks).
+4. Representatives can copy this JSON directly to align their ESP32, Python simulator, or PLC code.
