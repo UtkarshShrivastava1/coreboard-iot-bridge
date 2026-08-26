@@ -3,7 +3,8 @@ import { io } from 'socket.io-client';
 import { 
   Activity, ShieldAlert, Cpu, LogOut, Building2, User, Mail, 
   Lock, Radio, RefreshCw, Terminal, 
-  Menu, X, CheckCircle2, AlertTriangle, Thermometer, Droplets, Gauge, Zap, Bell
+  Menu, X, CheckCircle2, AlertTriangle, Thermometer, Droplets, Gauge, Zap, Bell,
+  Code, Copy, Check
 } from 'lucide-react';
 
 // Interfaces
@@ -50,6 +51,61 @@ interface Alarm {
   cleared_at: number | null;
 }
 
+const DEVICE_JSON_TEMPLATES: Record<string, any> = {
+  pump: {
+    device_id: "DEVICE_ID",
+    device_type: "pump",
+    flow_rate: 25.4,
+    temperature: 32.5,
+    status: "optimal"
+  },
+  temp_sensor: {
+    device_id: "DEVICE_ID",
+    device_type: "temp_sensor",
+    temperature: 24.2,
+    humidity: 58.0,
+    status: "optimal"
+  },
+  pressure_sensor: {
+    device_id: "DEVICE_ID",
+    device_type: "pressure_sensor",
+    pressure: 4.2,
+    status: "optimal"
+  },
+  power_meter: {
+    device_id: "DEVICE_ID",
+    device_type: "power_meter",
+    voltage: 230.1,
+    current: 4.8,
+    power: 1.1,
+    status: "optimal"
+  },
+  smart_lock: {
+    device_id: "DEVICE_ID",
+    device_type: "smart_lock",
+    lock_state: true,
+    status: "optimal"
+  },
+  motion_sensor: {
+    device_id: "DEVICE_ID",
+    device_type: "motion_sensor",
+    motion_detected: false,
+    status: "optimal"
+  },
+  smart_switch: {
+    device_id: "DEVICE_ID",
+    device_type: "smart_switch",
+    switch_state: true,
+    status: "optimal"
+  },
+  custom_sensor: {
+    device_id: "DEVICE_ID",
+    device_type: "custom_sensor",
+    custom_metric: 100.0,
+    status: "optimal"
+  }
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export default function App() {
@@ -62,6 +118,10 @@ export default function App() {
   // Screen State: 'landing' | 'dashboard'
   const [currentScreen, setCurrentScreen] = useState<'landing' | 'dashboard'>(token ? 'dashboard' : 'landing');
   const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
+
+  // Device JSON Template specs modal state
+  const [selectedTemplateDevice, setSelectedTemplateDevice] = useState<Device | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Form States
   const [tenantId, setTenantId] = useState('');
@@ -1527,6 +1587,7 @@ export default function App() {
                               <th className="pb-3 font-bold">Hardware Classification</th>
                               <th className="pb-3 font-bold">Created Date</th>
                               <th className="pb-3 font-bold">State</th>
+                              <th className="pb-3 font-bold text-right">Integration Specifications</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1546,6 +1607,18 @@ export default function App() {
                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] uppercase font-bold text-slate-500">
                                       Registered
                                     </span>
+                                  </td>
+                                  <td className="py-3.5 text-right">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedTemplateDevice(d);
+                                        setIsCopied(false);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 hover:bg-cyan-500 hover:text-black transition-all"
+                                    >
+                                      <Code className="w-3.5 h-3.5" />
+                                      View MQTT & JSON
+                                    </button>
                                   </td>
                                 </tr>
                               ))
@@ -1938,6 +2011,115 @@ export default function App() {
                 <span>Coreboard Multi-Tenant Gateway v3.2.0</span>
               </div>
             </footer>
+
+          </div>
+        </div>
+      )}
+
+      {/* Modal: View MQTT & JSON Payload Specifications */}
+      {selectedTemplateDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#0c1222] border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-900/60 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide flex items-center gap-2">
+                  <Code className="w-4 h-4 text-cyan-400" />
+                  Integration Specifications
+                </h3>
+                <p className="text-[10px] text-slate-500 mt-0.5">Specifications for device: <span className="text-cyan-400 font-bold">{selectedTemplateDevice.device_id}</span></p>
+              </div>
+              <button 
+                onClick={() => setSelectedTemplateDevice(null)}
+                className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              
+              {/* MQTT Topics */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">MQTT Topics</h4>
+                <div className="bg-black/40 border border-slate-900 rounded-lg p-3 space-y-2 text-[10px]">
+                  <div>
+                    <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Uplink (Publish Telemetry)</span>
+                    <code className="text-emerald-400 select-all block">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/pub</code>
+                  </div>
+                  {["smart_lock", "smart_switch"].includes(selectedTemplateDevice.device_type) && (
+                    <div>
+                      <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Downlink (Subscribe to commands)</span>
+                      <code className="text-cyan-400 select-all block">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/sub</code>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* JSON Payload */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">JSON Body Payload</h4>
+                  <button
+                    onClick={() => {
+                      const payloadStr = JSON.stringify(
+                        {
+                          ...DEVICE_JSON_TEMPLATES[selectedTemplateDevice.device_type] || DEVICE_JSON_TEMPLATES.custom_sensor,
+                          device_id: selectedTemplateDevice.device_id
+                        },
+                        null,
+                        2
+                      );
+                      navigator.clipboard.writeText(payloadStr);
+                      setIsCopied(true);
+                      setTimeout(() => setIsCopied(false), 2000);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-cyan-400 hover:text-white transition-all font-bold"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" /> Copy JSON
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="bg-black/60 border border-slate-900 rounded-lg p-4 max-h-[220px] overflow-y-auto">
+                  <pre className="text-slate-300 text-2xs leading-relaxed select-all">
+                    {JSON.stringify(
+                      {
+                        ...DEVICE_JSON_TEMPLATES[selectedTemplateDevice.device_type] || DEVICE_JSON_TEMPLATES.custom_sensor,
+                        device_id: selectedTemplateDevice.device_id
+                      },
+                      null,
+                      2
+                    )}
+                  </pre>
+                </div>
+              </div>
+
+              {/* TLS warning */}
+              <div className="bg-amber-950/20 border border-amber-500/20 text-amber-300/80 p-3 rounded-lg text-[9px] leading-relaxed">
+                ⚠️ <span className="font-bold">Important:</span> Connections require dynamic X.509 client certificates and private keys generated by the SuperAdmin team. Secure handshakes run over TLS port 8883.
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-900/40 px-6 py-3.5 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setSelectedTemplateDevice(null)}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[11px] font-bold"
+              >
+                Close Specifications
+              </button>
+            </div>
 
           </div>
         </div>
