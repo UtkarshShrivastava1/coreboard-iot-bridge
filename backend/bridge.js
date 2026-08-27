@@ -15,7 +15,12 @@ const {
   AttachThingPrincipalCommand, 
   AttachPolicyCommand,
   CreatePolicyCommand,
-  UpdateThingCommand
+  UpdateThingCommand,
+  DeleteThingCommand,
+  DetachThingPrincipalCommand,
+  UpdateCertificateCommand,
+  DeleteCertificateCommand,
+  ListThingPrincipalsCommand
 } = require('@aws-sdk/client-iot');
 const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
@@ -1000,6 +1005,195 @@ app.post('/api/superadmin/tenants/:tenantId/devices/provision', authenticateToke
 
   } catch (error) {
     console.error(`[Provisioning Error] Failed to provision device ${cleanDeviceId}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3f. Get Tenant Devices (Superadmin only)
+app.get('/api/superadmin/tenants/:tenantId/devices', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
+  const { tenantId } = req.params;
+  const cleanTenantId = tenantId.trim().toLowerCase();
+
+  try {
+    const response = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND begins_with(#ts, :sk_prefix)',
+      ExpressionAttributeNames: {
+        '#ts': 'timestamp'
+      },
+      ExpressionAttributeValues: {
+        ':pk': `TENANT#${cleanTenantId}`,
+        ':sk_prefix': 'METADATA#DEVICE#'
+      }
+    }));
+
+    const devices = (response.Items || []).map(item => ({
+      device_id: item.timestamp.replace('METADATA#DEVICE#', ''),
+      device_type: item.device_type || 'unknown',
+      status: item.status || 'active',
+      created_at: item.created_at || Date.now(),
+      certArn: item.certArn || ''
+    }));
+
+    res.json(devices);
+  } catch (error) {
+    console.error('[Superadmin Get Tenant Devices Error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3g. Regenerate Device Credentials / Re-Setup (Superadmin only)
+app.post('/api/superadmin/tenants/:tenantId/devices/:deviceId/reset', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
+  const { tenantId, deviceId } = req.params;
+  const cleanTenantId = tenantId.trim().toLowerCase();
+  const cleanDeviceId = deviceId.trim();
+
+  try {
+    // 1. Query current metadata to verify device exists
+    const queryRes = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND #ts = :sk',
+      ExpressionAttributeNames: { '#ts': 'timestamp' },
+      ExpressionAttributeValues: {
+        ':pk': `TENANT#${cleanTenantId}`,
+        ':sk': `METADATA#DEVICE#${cleanDeviceId}`
+      }
+    }));
+
+    if (!queryRes.Items || queryRes.Items.length === 0) {
+      return res.status(404).json({ error: `Device ${cleanDeviceId} not found under tenant ${cleanTenantId}.` });
+    }
+
+    const deviceMetadata = queryRes.Items[0];
+
+    // 2. Detach and delete any old certificates connected to this Thing
+    try {
+      const principals = await iotClient.send(new ListThingPrincipalsCommand({
+        thingName: cleanDeviceId
+      }));
+      for (const principal of (principals.principals || [])) {
+        const certId = principal.split('/').pop();
+        console.log(`[AWS IoT Reset] Detaching old principal ${principal} from Thing ${cleanDeviceId}...`);
+        await iotClient.send(new DetachThingPrincipalCommand({
+          thingName: cleanDeviceId,
+          principal: principal
+        }));
+        await iotClient.send(new UpdateCertificateCommand({
+          certificateId: certId,
+          newStatus: 'INACTIVE'
+        }));
+        await iotClient.send(new DeleteCertificateCommand({
+          certificateId: certId
+        }));
+        console.log(`[AWS IoT Reset] Successfully deleted old cert ${certId}`);
+      }
+    } catch (detachError) {
+      console.warn(`[AWS IoT Reset Warning] Failed detaching old principals for ${cleanDeviceId}:`, detachError.message);
+    }
+
+    // 3. Generate new X.509 Cryptographic Key Pair and Certificate
+    const certResponse = await iotClient.send(new CreateKeysAndCertificateCommand({
+      setAsActive: true
+    }));
+    const certArn = certResponse.certificateArn;
+    const certPem = certResponse.certificatePem;
+    const privateKeyPem = certResponse.keyPair.PrivateKey;
+
+    // 4. Attach new principal & policies to Thing
+    await iotClient.send(new AttachThingPrincipalCommand({
+      thingName: cleanDeviceId,
+      principal: certArn
+    }));
+
+    const policyName = process.env.AWS_IOT_POLICY_NAME || 'esp32_iot_bridge_policy';
+    await iotClient.send(new AttachPolicyCommand({
+      policyName: policyName,
+      target: certArn
+    }));
+
+    // 5. Update DynamoDB metadata
+    await ddbDocClient.send(new PutCommand({
+      TableName: DYNAMODB_TABLE,
+      Item: {
+        ...deviceMetadata,
+        certArn: certArn,
+        updated_at: Date.now()
+      }
+    }));
+
+    res.json({
+      success: true,
+      message: `Credentials regenerated successfully for device ${cleanDeviceId}.`,
+      credentials: {
+        certificatePem: certPem,
+        privateKeyPem: privateKeyPem,
+        certificateArn: certArn
+      }
+    });
+
+  } catch (error) {
+    console.error('[Superadmin Device Reset Error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3h. Delete Device Registry (Superadmin only)
+app.delete('/api/superadmin/tenants/:tenantId/devices/:deviceId', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
+  const { tenantId, deviceId } = req.params;
+  const cleanTenantId = tenantId.trim().toLowerCase();
+  const cleanDeviceId = deviceId.trim();
+
+  try {
+    // 1. Detach and delete certificates from AWS IoT Core
+    try {
+      const principals = await iotClient.send(new ListThingPrincipalsCommand({
+        thingName: cleanDeviceId
+      }));
+      for (const principal of (principals.principals || [])) {
+        const certId = principal.split('/').pop();
+        console.log(`[AWS IoT Delete] Detaching principal ${principal} from Thing ${cleanDeviceId}...`);
+        await iotClient.send(new DetachThingPrincipalCommand({
+          thingName: cleanDeviceId,
+          principal: principal
+        }));
+        await iotClient.send(new UpdateCertificateCommand({
+          certificateId: certId,
+          newStatus: 'INACTIVE'
+        }));
+        await iotClient.send(new DeleteCertificateCommand({
+          certificateId: certId
+        }));
+        console.log(`[AWS IoT Delete] Successfully deleted cert ${certId}`);
+      }
+    } catch (err) {
+      console.warn(`[AWS IoT Delete Warning] Failed clearing principals:`, err.message);
+    }
+
+    // 2. Delete Thing from AWS IoT Core
+    try {
+      await iotClient.send(new DeleteThingCommand({
+        thingName: cleanDeviceId
+      }));
+      console.log(`[AWS IoT Delete] Thing deleted: ${cleanDeviceId}`);
+    } catch (err) {
+      console.warn(`[AWS IoT Delete Warning] Failed deleting Thing:`, err.message);
+    }
+
+    // 3. Delete from DynamoDB
+    await ddbDocClient.send(new DeleteCommand({
+      TableName: DYNAMODB_TABLE,
+      Key: {
+        device_id: `TENANT#${cleanTenantId}`,
+        timestamp: `METADATA#DEVICE#${cleanDeviceId}`
+      }
+    }));
+
+    res.json({
+      success: true,
+      message: `Device ${cleanDeviceId} deleted successfully from DynamoDB and AWS IoT.`
+    });
+  } catch (error) {
+    console.error('[Superadmin Delete Device Error]:', error);
     res.status(500).json({ error: error.message });
   }
 });

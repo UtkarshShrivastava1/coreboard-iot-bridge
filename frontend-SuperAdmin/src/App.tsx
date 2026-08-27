@@ -12,7 +12,10 @@ import {
   Clock, 
   Download, 
   ArrowRight,
-  Database
+  Database,
+  Sliders,
+  Trash2,
+  Settings
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -43,7 +46,17 @@ export default function App() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
   // Active workspace state
-  const [activeTab, setActiveTab] = useState<'pending_requests' | 'tenant_manager' | 'direct_provision'>('pending_requests');
+  const [activeTab, setActiveTab] = useState<'pending_requests' | 'tenant_manager' | 'direct_provision' | 'tenant_profiles'>('pending_requests');
+
+  // Tenant Profile / Devices View state
+  const [selectedProfileTenantId, setSelectedProfileTenantId] = useState('');
+  const [tenantDevices, setTenantDevices] = useState<any[]>([]);
+  const [loadingTenantDevices, setLoadingTenantDevices] = useState(false);
+  const [resetCredentialsData, setResetCredentialsData] = useState<any | null>(null);
+  const [deviceResetSuccess, setDeviceResetSuccess] = useState<string | null>(null);
+  const [deviceResetError, setDeviceResetError] = useState<string | null>(null);
+  const [deviceDeleteSuccess, setDeviceDeleteSuccess] = useState<string | null>(null);
+  const [deviceDeleteError, setDeviceDeleteError] = useState<string | null>(null);
 
   // Direct Provisioning & Tenants List State
   const [tenants, setTenants] = useState<{ tenantId: string; companyName: string; adminEmail: string }[]>([]);
@@ -166,6 +179,100 @@ export default function App() {
       setDirectError(err.message);
     } finally {
       setIsProvisioning(false);
+    }
+  };
+
+  const fetchTenantDevices = async (tenantIdVal: string) => {
+    if (!tenantIdVal) {
+      setTenantDevices([]);
+      return;
+    }
+    setLoadingTenantDevices(true);
+    setDeviceResetSuccess(null);
+    setDeviceResetError(null);
+    setDeviceDeleteSuccess(null);
+    setDeviceDeleteError(null);
+    setResetCredentialsData(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tenantIdVal}/devices`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch tenant devices.');
+      setTenantDevices(data);
+    } catch (err: any) {
+      console.error(err);
+      setTenantDevices([]);
+    } finally {
+      setLoadingTenantDevices(false);
+    }
+  };
+
+  const handleResetDeviceCredentials = async (tenantIdVal: string, deviceIdVal: string) => {
+    if (!window.confirm(`Are you sure you want to regenerate credentials for device ${deviceIdVal}? The old certificates will be permanently deleted and invalidated in AWS IoT Core.`)) {
+      return;
+    }
+    setDeviceResetSuccess(null);
+    setDeviceResetError(null);
+    setResetCredentialsData(null);
+    setProvLogs(prev => [...prev, `[INFO] Initiating credential regeneration for ${deviceIdVal}...`]);
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tenantIdVal}/devices/${deviceIdVal}/reset`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to regenerate credentials.');
+
+      setProvLogs(prev => [
+        ...prev,
+        `[AWS] Old certificates detached and deleted.`,
+        `[AWS] New X.509 Cryptographic Key Pair generated.`,
+        `[AWS] Attached new principal to Thing ${deviceIdVal}.`,
+        `[DynamoDB] Device metadata updated.`,
+        `[SUCCESS] Credentials regenerated successfully for ${deviceIdVal}.`
+      ]);
+
+      setResetCredentialsData(data.credentials);
+      setDeviceResetSuccess(`Credentials successfully regenerated for device ${deviceIdVal}. Please download the new certificate package.`);
+      fetchTenantDevices(tenantIdVal); // Refresh device list
+    } catch (err: any) {
+      setDeviceResetError(err.message);
+      setProvLogs(prev => [...prev, `[ERROR] Credential regeneration failed: ${err.message}`]);
+    }
+  };
+
+  const handleDeleteDevice = async (tenantIdVal: string, deviceIdVal: string) => {
+    if (!window.confirm(`WARNING: Are you sure you want to delete device ${deviceIdVal} completely? This will delete the Thing from AWS IoT Core, deactivate and delete its certificates, and remove its metadata from DynamoDB. This action is irreversible.`)) {
+      return;
+    }
+    setDeviceDeleteSuccess(null);
+    setDeviceDeleteError(null);
+    setProvLogs(prev => [...prev, `[INFO] Deleting device ${deviceIdVal}...`]);
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tenantIdVal}/devices/${deviceIdVal}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete device.');
+
+      setProvLogs(prev => [
+        ...prev,
+        `[AWS] Certs detached and deleted.`,
+        `[AWS] Thing deleted from registry.`,
+        `[DynamoDB] Device metadata removed.`,
+        `[SUCCESS] Device ${deviceIdVal} completely deleted.`
+      ]);
+
+      setDeviceDeleteSuccess(`Device ${deviceIdVal} has been completely deleted.`);
+      fetchTenantDevices(tenantIdVal); // Refresh device list
+    } catch (err: any) {
+      setDeviceDeleteError(err.message);
+      setProvLogs(prev => [...prev, `[ERROR] Deleting device failed: ${err.message}`]);
     }
   };
 
@@ -506,6 +613,18 @@ export default function App() {
         >
           <Database className="h-4 w-4" />
           Direct Provisioning
+        </button>
+
+        <button 
+          onClick={() => { setActiveTab('tenant_profiles'); fetchTenants(); }}
+          className={`px-4 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
+            activeTab === 'tenant_profiles' 
+              ? 'bg-indigo-600 text-white shadow-md' 
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sliders className="h-4 w-4" />
+          Tenant Profiles
         </button>
       </div>
 
@@ -898,6 +1017,234 @@ export default function App() {
                   Directly Provision Device
                 </button>
               </form>
+            </div>
+
+          </div>
+        )}
+
+        {/* Tab 4: Tenant Profiles & Device Management */}
+        {activeTab === 'tenant_profiles' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-[fadeIn_0.2s_ease-out]">
+            
+            {/* Left Column: Tenant Selection & Details */}
+            <div className="lg:col-span-4 space-y-6">
+              
+              {/* Select Tenant Card */}
+              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl">
+                <h3 className="text-sm font-semibold orbitron text-white mb-1 uppercase tracking-wide flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-indigo-400" />
+                  Select Tenant Context
+                </h3>
+                <p className="text-[10px] text-slate-500 font-mono mb-4">View device profile registry and execute remote credentials reset or removal.</p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-slate-400 text-[10px] font-mono font-bold mb-1.5 uppercase">Tenant Business Account</label>
+                    <select
+                      value={selectedProfileTenantId}
+                      onChange={(e) => {
+                        setSelectedProfileTenantId(e.target.value);
+                        fetchTenantDevices(e.target.value);
+                      }}
+                      className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer font-mono font-semibold"
+                    >
+                      <option value="">-- Choose Tenant --</option>
+                      {tenants.map(t => (
+                        <option key={t.tenantId} value={t.tenantId}>
+                          {t.companyName} ({t.tenantId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected Tenant Info */}
+              {selectedProfileTenantId && (() => {
+                const currentTenant = tenants.find(t => t.tenantId === selectedProfileTenantId);
+                if (!currentTenant) return null;
+                return (
+                  <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 shadow-xl font-mono text-[10px] text-slate-400 space-y-2.5">
+                    <h4 className="text-[11px] font-bold text-slate-200 uppercase tracking-wide border-b border-[#1e293b] pb-1.5">Tenant Profile Details</h4>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Company Name:</span>
+                      <span className="text-slate-300 font-bold">{currentTenant.companyName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Tenant ID Slug:</span>
+                      <span className="text-slate-300 font-bold text-indigo-400">{currentTenant.tenantId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Administrator:</span>
+                      <span className="text-slate-300 font-bold select-all">{currentTenant.adminEmail}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Reset Logs Console */}
+              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 flex flex-col h-[200px] shadow-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Terminal className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-[10px] font-bold orbitron text-white uppercase tracking-wider">AWS / DB Event Logs</h3>
+                </div>
+                <div className="flex-1 bg-black/60 rounded-lg p-3.5 font-mono text-[9px] overflow-y-auto border border-slate-900 flex flex-col gap-1.5">
+                  {provLogs.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-slate-700">
+                      &gt;&gt; MONITOR READY &lt;&lt;
+                    </div>
+                  ) : (
+                    provLogs.map((log, idx) => {
+                      let color = 'text-slate-400';
+                      if (log.includes('[ERROR]')) color = 'text-rose-500 font-bold';
+                      if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
+                      if (log.includes('[AWS]')) color = 'text-indigo-400';
+                      return <div key={idx} className={`${color} border-l border-slate-850 pl-2`}>{log}</div>;
+                    })
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column: Device Registry List */}
+            <div className="lg:col-span-8 space-y-6">
+              
+              {/* Devices Card */}
+              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center border-b border-[#1e293b] pb-4">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Device Registry Matrix</h3>
+                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">Active client hardware tokens and cryptographic configurations under this partition key.</p>
+                  </div>
+                  {selectedProfileTenantId && (
+                    <button 
+                      onClick={() => fetchTenantDevices(selectedProfileTenantId)}
+                      disabled={loadingTenantDevices}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 border border-[#1e293b] text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-all font-mono"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loadingTenantDevices ? 'animate-spin' : ''}`} />
+                      Refresh Registry
+                    </button>
+                  )}
+                </div>
+
+                {deviceResetSuccess && (
+                  <div className="bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] p-3 rounded-lg font-mono">
+                    ✅ {deviceResetSuccess}
+                  </div>
+                )}
+                {deviceResetError && (
+                  <div className="bg-rose-950/40 border border-rose-500/20 text-rose-400 text-[10px] p-3 rounded-lg font-mono">
+                    ❌ {deviceResetError}
+                  </div>
+                )}
+                {deviceDeleteSuccess && (
+                  <div className="bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] p-3 rounded-lg font-mono">
+                    🗑️ {deviceDeleteSuccess}
+                  </div>
+                )}
+                {deviceDeleteError && (
+                  <div className="bg-rose-950/40 border border-rose-500/20 text-rose-400 text-[10px] p-3 rounded-lg font-mono">
+                    ❌ {deviceDeleteError}
+                  </div>
+                )}
+
+                {!selectedProfileTenantId ? (
+                  <div className="text-center py-12 border border-dashed border-[#1e293b] rounded-xl bg-slate-950/10">
+                    <Building2 className="w-10 h-10 text-slate-700 mx-auto mb-2" />
+                    <p className="text-xs font-mono text-slate-500">Select a tenant on the left to inspect and manage devices.</p>
+                  </div>
+                ) : loadingTenantDevices ? (
+                  <div className="text-center py-12 font-mono text-xs text-slate-500">
+                    Querying DynamoDB partition registry...
+                  </div>
+                ) : tenantDevices.length === 0 ? (
+                  <div className="text-center py-12 border border-dashed border-[#1e293b] rounded-xl bg-slate-950/10 font-mono text-xs text-slate-500">
+                    No devices registered under this tenant.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left font-mono text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#1e293b] text-slate-500 uppercase text-[9px] tracking-wider pb-2">
+                          <th className="pb-2 font-bold">Device ID</th>
+                          <th className="pb-2 font-bold">Hardware Classification</th>
+                          <th className="pb-2 font-bold">Created Date</th>
+                          <th className="pb-2 font-bold">AWS Certificate ARN</th>
+                          <th className="pb-2 font-bold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tenantDevices.map(device => (
+                          <tr key={device.device_id} className="border-b border-slate-900/60 hover:bg-[#1e293b]/10 transition-all">
+                            <td className="py-3 text-slate-200 font-bold">{device.device_id}</td>
+                            <td className="py-3 text-slate-400 uppercase text-[10px] tracking-wider">{device.device_type}</td>
+                            <td className="py-3 text-slate-500">{new Date(device.created_at || Date.now()).toLocaleDateString()}</td>
+                            <td className="py-3 text-slate-500 text-[10px] select-all max-w-[150px] truncate" title={device.certArn}>
+                              {device.certArn ? `${device.certArn.substring(0, 15)}...${device.certArn.slice(-8)}` : 'None'}
+                            </td>
+                            <td className="py-3 text-right space-x-2">
+                              <button
+                                onClick={() => handleResetDeviceCredentials(selectedProfileTenantId, device.device_id)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all font-semibold"
+                                title="Re-Setup device keys"
+                              >
+                                <Settings className="h-3 w-3" />
+                                Re-Setup
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDevice(selectedProfileTenantId, device.device_id)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-950/40 border border-rose-500/20 text-[10px] font-bold text-rose-400 hover:bg-rose-600 hover:text-white transition-all font-semibold"
+                                title="Delete device completely"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Reset Credentials Download Panel */}
+              {resetCredentialsData && (
+                <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-2 border-b border-[#1e293b] pb-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    <h3 className="text-sm font-semibold orbitron text-white uppercase tracking-wide">Credentials Download Packages</h3>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    New cryptographic certificates successfully established in AWS IoT Core registry. Download files to flash onto ESP32 simulator client.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-[10px]">
+                    <button
+                      onClick={() => downloadCredentialFile(resetCredentialsData.certificatePem, `device_certificate.crt`)}
+                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Download className="h-4 w-4" /> Download Certificate
+                      </span>
+                      <span className="text-[9px] text-slate-500 font-normal">device.pem.crt</span>
+                    </button>
+
+                    <button
+                      onClick={() => downloadCredentialFile(resetCredentialsData.privateKeyPem, `private_key.key`)}
+                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Download className="h-4 w-4" /> Download Private Key
+                      </span>
+                      <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
 
           </div>

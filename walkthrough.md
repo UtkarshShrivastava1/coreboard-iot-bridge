@@ -14,6 +14,7 @@ This document summarizes the execution and verification of the system updates:
 - [x] **Downlink API Endpoint**: Added a secure POST route `POST /api/tenants/:tenantId/devices/:deviceId/actuate` inside [`bridge.js`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/backend/bridge.js).
   - Authenticates user JWT and verifies tenant scope.
   - Publishes command JSON to topic `tenants/<tenantId>/devices/<deviceId>/sub` via AWS IoT Core MQTT broker.
+- [x] **SuperAdmin Management API Endpoints**: Created GET, POST (Reset), and DELETE routes inside [`bridge.js`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/backend/bridge.js) to view tenant devices, regenerate client credentials in AWS registry, and clean up physical devices.
 
 ### 2. Tenant Dashboard (`/frontend`)
 - [x] **Actuation Dispatcher**: Implemented `handleActuateDevice()` in [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend/src/App.tsx) to submit control commands to the backend.
@@ -28,6 +29,11 @@ This document summarizes the execution and verification of the system updates:
   - Add option presets for **Smart Lock**, **Motion Sensor**, and **Smart Switch**.
   - Render interactive toggles on the simulator dashboard for domestic/security profiles.
   - Listen for downlink commands via Socket.io, update slider/state views in real-time, and automatically publish an updated uplink confirming the state change to the bridge.
+
+### 4. SuperAdmin Dashboard (`/frontend-SuperAdmin`)
+- [x] **Tenant Profiles Tab**: Created a dedicated profile explorer tab in [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend-SuperAdmin/src/App.tsx) to let SuperAdmin select any registered tenant and inspect their registered hardware profile registry matrix dynamically.
+- [x] **Re-Setup (Regenerate Credentials)**: Implemented credentials resetup functionality. Clicking **Re-Setup** invalidates/deletes old keys on AWS IoT Core, creates a new X.509 keypair, attaches the required policies/principals, updates DynamoDB, and renders direct download cards for the new certificate and private key.
+- [x] **Delete Registry**: Added complete device deletion. Safely detaches and deletes certificates from AWS, deletes the registered Thing from AWS IoT Core, and removes the DynamoDB partition row metadata, keeping registries clean.
 
 ---
 
