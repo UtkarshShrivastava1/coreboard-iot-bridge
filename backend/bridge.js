@@ -294,17 +294,24 @@ async function ensureIoTPolicyExists() {
         {
           Effect: "Allow",
           Action: ["iot:Connect"],
-          Resource: [`arn:aws:iot:${region}:*:client/\${iot:Connection.Thing.ThingName}`]
+          // Wildcard clientId allows simulator to connect as any device
+          Resource: [`arn:aws:iot:${region}:*:client/*`]
         },
         {
           Effect: "Allow",
           Action: ["iot:Publish"],
-          Resource: [`arn:aws:iot:${region}:*:topic/tenants/*/devices/\${iot:Connection.Thing.ThingName}/pub`]
+          Resource: [`arn:aws:iot:${region}:*:topic/tenants/*/devices/*/pub`]
         },
         {
           Effect: "Allow",
-          Action: ["iot:Subscribe", "iot:Receive"],
-          Resource: [`arn:aws:iot:${region}:*:topic/tenants/*/devices/\${iot:Connection.Thing.ThingName}/sub`]
+          Action: ["iot:Subscribe"],
+          // IMPORTANT: subscribe must use topicfilter/ not topic/
+          Resource: [`arn:aws:iot:${region}:*:topicfilter/tenants/*/devices/*/sub`]
+        },
+        {
+          Effect: "Allow",
+          Action: ["iot:Receive"],
+          Resource: [`arn:aws:iot:${region}:*:topic/tenants/*/devices/*/sub`]
         }
       ]
     };

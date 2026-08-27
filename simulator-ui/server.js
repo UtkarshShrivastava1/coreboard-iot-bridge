@@ -96,14 +96,8 @@ io.on('connection', (socket) => {
           lastData: {}
         });
 
-        const subTopic = `tenants/${tenantId || 'default-tenant'}/devices/${cleanThing}/sub`;
-        mqttClient.subscribe(subTopic, (err) => {
-          if (err) {
-            console.error(`[AWS MQTT] Device ${cleanThing} failed to subscribe to sub topic:`, err);
-          } else {
-            console.log(`[AWS MQTT] Device ${cleanThing} subscribed to sub topic: ${subTopic}`);
-          }
-        });
+        // Simulator is a publish-only client — no sub topic subscription needed
+        // (subscribing caused SUBACK rejections that killed the connection)
 
         io.emit('device_status', {
           thingName: cleanThing,
@@ -140,6 +134,15 @@ io.on('connection', (socket) => {
 
       mqttClient.on('close', () => {
         console.log(`[AWS MQTT] Device ${cleanThing} connection closed.`);
+        // Clean up pool on unexpected close to stop stale auto-intervals
+        if (connectionPool.has(cleanThing)) {
+          const dev = connectionPool.get(cleanThing);
+          if (dev.autoInterval) {
+            clearInterval(dev.autoInterval);
+            dev.autoInterval = null;
+          }
+          connectionPool.delete(cleanThing);
+        }
         io.emit('device_status', {
           thingName: cleanThing,
           status: 'disconnected'
