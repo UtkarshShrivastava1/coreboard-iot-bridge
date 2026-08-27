@@ -31,17 +31,6 @@ io.on('connection', (socket) => {
   console.log(`[Simulator WS] Web client connected: ${socket.id}`);
 
   // Send list of currently active simulated devices to newly connected UI client
-  const activeDevices = [];
-  connectionPool.forEach((val, thingName) => {
-    activeDevices.append({
-      thingName,
-      deviceType: val.deviceType,
-      tenantId: val.tenantId,
-      status: val.mqttClient.connected ? 'connected' : 'disconnected',
-      isAuto: !!val.autoInterval,
-      lastData: val.lastData
-    });
-  });
   // Note: we can map connectionPool keys to array
   const formattedActive = Array.from(connectionPool.entries()).map(([thingName, val]) => ({
     thingName,
