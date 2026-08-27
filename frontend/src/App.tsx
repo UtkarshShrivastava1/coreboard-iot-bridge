@@ -133,7 +133,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sidebar navigation
-  const [activeTab, setActiveTab] = useState<'telemetry' | 'devices' | 'alarms' | 'simulator'>('telemetry');
+  const [activeTab, setActiveTab] = useState<'overview' | 'telemetry' | 'devices' | 'alarms' | 'simulator'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Tenant Signup State
@@ -972,6 +972,18 @@ export default function App() {
             {/* Nav Link Lists */}
             <nav className="flex-1 px-4 py-6 space-y-2 font-mono text-xs">
               <button
+                onClick={() => setActiveTab('overview')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
+                  activeTab === 'overview' 
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
+                }`}
+              >
+                <Building2 className="w-4 h-4 shrink-0" />
+                {sidebarOpen && <span>Overview Dashboard</span>}
+              </button>
+
+              <button
                 onClick={() => setActiveTab('telemetry')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
                   activeTab === 'telemetry' 
@@ -1076,6 +1088,175 @@ export default function App() {
 
             {/* Dashboard Workspace */}
             <main className="flex-1 p-6 overflow-y-auto space-y-6">
+              
+              {/* VIEW A: OVERVIEW DASHBOARD */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  
+                  {/* Top Stat Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Stat 1: Online Status */}
+                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">System Status</span>
+                        <span className="text-xl font-bold orbitron text-white mt-1 block">
+                          {Object.values(liveDevices).filter(v => v).length} / {devices.length} Online
+                        </span>
+                      </div>
+                      <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 text-emerald-400">
+                        <Activity className="w-6 h-6 animate-pulse" />
+                      </div>
+                    </div>
+
+                    {/* Stat 2: Active Alarms */}
+                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">Active Incidents</span>
+                        <span className="text-xl font-bold orbitron text-white mt-1 block">
+                          {alarms.filter(a => a.status === 'ACTIVE').length} Alarms
+                        </span>
+                      </div>
+                      <div className="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-rose-400">
+                        <Bell className="w-6 h-6 animate-bounce" style={{ animationDuration: '3s' }} />
+                      </div>
+                    </div>
+
+                    {/* Stat 3: Device Registry size */}
+                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">Registered Assets</span>
+                        <span className="text-xl font-bold orbitron text-white mt-1 block">
+                          {devices.length} Devices
+                        </span>
+                      </div>
+                      <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20 text-cyan-400">
+                        <Cpu className="w-6 h-6" />
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Devices Overview Grid */}
+                  <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                    <div>
+                      <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide flex items-center gap-2">
+                        <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+                        All Devices Display Monitor
+                      </h3>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Real-time connectivity and status matrix for all active multi-tenant telemetry points.</p>
+                    </div>
+
+                    {devices.length === 0 ? (
+                      <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl bg-slate-950/20">
+                        <Cpu className="w-12 h-12 text-slate-700 mx-auto mb-3" />
+                        <p className="text-xs font-mono text-slate-500">No active registered devices found. Onboard a device to view stats.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {devices.map((d) => {
+                          const isOnline = !!liveDevices[d.device_id];
+                          const data = liveTelemetry[d.device_id];
+                          const deviceAlarms = alarms.filter(a => a.device_id === d.device_id && a.status === 'ACTIVE');
+
+                          return (
+                            <div 
+                              key={d.device_id}
+                              className={`bg-[#0a0f1d] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all hover:scale-[1.01] hover:border-slate-700/60 ${
+                                isOnline ? 'border-slate-800/80' : 'border-slate-900/60 opacity-70'
+                              }`}
+                            >
+                              {/* Card Header */}
+                              <div className="flex items-start justify-between border-b border-slate-800/40 pb-3 mb-4">
+                                <div>
+                                  <span className="text-[9px] text-slate-500 font-mono font-bold uppercase tracking-wider block">{d.device_type}</span>
+                                  <h4 className="text-xs font-bold font-mono text-slate-200 mt-0.5">{d.device_id}</h4>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  {deviceAlarms.length > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full bg-rose-600/10 border border-rose-500/20 text-rose-400 text-[8px] font-mono font-bold animate-pulse">
+                                      {deviceAlarms.length} ALARM
+                                    </span>
+                                  )}
+                                  <span className={`w-2.5 h-2.5 rounded-full ${
+                                    isOnline ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse' : 'bg-slate-750'
+                                  }`}></span>
+                                </div>
+                              </div>
+
+                              {/* Card Body - Telemetry Snapshot */}
+                              <div className="flex-1 space-y-3">
+                                {isOnline && data ? (
+                                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                                    {Object.keys(data)
+                                      .filter(k => !['device_id', 'device_type', 'timestamp', 'status', 'tenant_id'].includes(k))
+                                      .map(key => {
+                                        const val = data[key];
+                                        const isBoolean = typeof val === 'boolean';
+
+                                        return (
+                                          <div key={key} className="bg-black/35 rounded-lg p-2 border border-slate-900 flex flex-col justify-between">
+                                            <span className="text-[8px] text-slate-500 uppercase tracking-wide truncate block">{key.replace('_', ' ')}</span>
+                                            {isBoolean ? (
+                                              <div className="flex items-center justify-between mt-1">
+                                                <span className={`font-bold ${val ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                                  {val ? 'ON' : 'OFF'}
+                                                </span>
+                                                <button
+                                                  onClick={() => handleActuateDevice(d.device_id, key, !val)}
+                                                  className="w-8 h-4 rounded-full bg-slate-800 relative transition-all border border-slate-700 focus:outline-none"
+                                                >
+                                                  <span className={`w-3 h-3 rounded-full bg-cyan-400 absolute top-0.5 transition-all ${
+                                                    val ? 'right-0.5' : 'left-0.5'
+                                                  }`}></span>
+                                                </button>
+                                              </div>
+                                            ) : (
+                                              <span className="text-[11px] font-bold text-slate-200 mt-1 block">
+                                                {typeof val === 'number' ? val.toFixed(1) : String(val)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                ) : (
+                                  <div className="h-[76px] flex items-center justify-center border border-slate-900 bg-slate-950/10 rounded-xl">
+                                    <span className="text-[10px] font-mono text-slate-600 italic">No live readings available</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Card Footer */}
+                              <div className="border-t border-slate-800/40 pt-4 mt-4 flex items-center justify-between">
+                                <span className="text-[8px] text-slate-600 font-mono">
+                                  {isOnline && data?.timestamp
+                                    ? `Last update: ${new Date(data.timestamp).toLocaleTimeString()}`
+                                    : 'Offline / Standby'}
+                                </span>
+                                
+                                <button
+                                  onClick={() => {
+                                    setActiveDeviceId(d.device_id);
+                                    setActiveTab('telemetry');
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[9px] font-bold font-mono text-cyan-400 hover:text-cyan-300 transition-colors uppercase"
+                                >
+                                  Inspect Detail &gt;
+                                </button>
+                              </div>
+
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+              )}
 
               {activeTab === 'telemetry' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

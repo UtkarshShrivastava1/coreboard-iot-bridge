@@ -19,6 +19,7 @@ This document summarizes the execution and verification of the system updates:
 - [x] **Actuation Dispatcher**: Implemented `handleActuateDevice()` in [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend/src/App.tsx) to submit control commands to the backend.
 - [x] **Dynamic Attributes Parser & Actuator UI**: Replaced the static attributes view in [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend/src/App.tsx) with a dynamic widget generator.
 - [x] **Integration Specifications Helper**: Added a **`[View MQTT & JSON]`** specification viewer button and popup modal inside [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend/src/App.tsx) to display exact topics and copy-paste ready JSON payloads customized for each hardware classification.
+- [x] **Global Overview Dashboard**: Implemented a beautiful default landing dashboard tab inside [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend/src/App.tsx) aggregating stats (online counts, active incidents, total assets) and rendering a responsive live display grid for all registered devices, complete with real-time metric snapshots, inline actuation control switches, and one-click deep-dive inspect toggles.
 
 ### 3. Universal Web Simulator (`/simulator-ui`)
 - [x] **Device Subscription**: Modified the simulated client connection block in [`server.js`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/simulator-ui/server.js) to automatically subscribe devices to their respective control topics (`/sub`).
