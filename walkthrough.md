@@ -29,6 +29,7 @@ This document summarizes the execution and verification of the system updates:
   - Add option presets for **Smart Lock**, **Motion Sensor**, and **Smart Switch**.
   - Render interactive toggles on the simulator dashboard for domestic/security profiles.
   - Listen for downlink commands via Socket.io, update slider/state views in real-time, and automatically publish an updated uplink confirming the state change to the bridge.
+- [x] **Dynamic Dropdowns (Auto-Fetch)**: Created CORS-enabled public endpoints (`/api/public/tenants` and `/api/public/tenants/:tenantId/devices`) in [`bridge.js`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/backend/bridge.js) and integrated them into the simulator [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/simulator-ui/client/src/App.tsx). It now auto-fetches onboarded tenants and active devices, auto-filling IDs and device profiles dynamically.
 
 ### 4. SuperAdmin Dashboard (`/frontend-SuperAdmin`)
 - [x] **Tenant Profiles Tab**: Created a dedicated profile explorer tab in [`App.tsx`](file:///d:/UTKARSH/GitHub/Orignal/coreboard-iot-bridge/frontend-SuperAdmin/src/App.tsx) to let SuperAdmin select any registered tenant and inspect their registered hardware profile registry matrix dynamically.

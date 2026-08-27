@@ -866,6 +866,63 @@ app.post('/api/superadmin/requests/approve', authenticateToken, requireRole(['SU
   }
 });
 
+// Public Endpoints for Simulator Helpers (CORS-enabled, read-only)
+app.get('/api/public/tenants', async (req, res) => {
+  try {
+    const response = await ddbDocClient.send(new ScanCommand({
+      TableName: DYNAMODB_TABLE,
+      FilterExpression: 'begins_with(#sk, :sk_prefix)',
+      ExpressionAttributeNames: { '#sk': 'timestamp' },
+      ExpressionAttributeValues: { ':sk_prefix': 'USER#' }
+    }));
+
+    const tenantsMap = new Map();
+    (response.Items || []).forEach(item => {
+      const tenantId = item.device_id.replace('TENANT#', '');
+      if (tenantId !== 'superadmin' && !tenantsMap.has(tenantId)) {
+        tenantsMap.set(tenantId, {
+          tenantId,
+          companyName: item.company_name || tenantId
+        });
+      }
+    });
+
+    res.json(Array.from(tenantsMap.values()));
+  } catch (error) {
+    console.error('[Public Get Tenants Error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/public/tenants/:tenantId/devices', async (req, res) => {
+  const { tenantId } = req.params;
+  const cleanTenantId = tenantId.trim().toLowerCase();
+
+  try {
+    const response = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND begins_with(#ts, :sk_prefix)',
+      ExpressionAttributeNames: {
+        '#ts': 'timestamp'
+      },
+      ExpressionAttributeValues: {
+        ':pk': `TENANT#${cleanTenantId}`,
+        ':sk_prefix': 'METADATA#DEVICE#'
+      }
+    }));
+
+    const devices = (response.Items || []).map(item => ({
+      deviceId: item.timestamp.replace('METADATA#DEVICE#', ''),
+      deviceType: item.device_type || 'pump'
+    }));
+
+    res.json(devices);
+  } catch (error) {
+    console.error('[Public Get Tenant Devices Error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 3d. List All Onboarded Tenants (Superadmin only)
 app.get('/api/superadmin/tenants', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
   try {
@@ -1105,9 +1162,13 @@ app.post('/api/superadmin/tenants/:tenantId/devices/:deviceId/reset', authentica
       principal: certArn
     }));
 
-    const policyName = process.env.AWS_IOT_POLICY_NAME || 'esp32_iot_bridge_policy';
+    const policyName = 'MultiTenantDevicePolicy';
     await iotClient.send(new AttachPolicyCommand({
       policyName: policyName,
+      target: certArn
+    }));
+    await iotClient.send(new AttachPolicyCommand({
+      policyName: 'MultiTenantBackendPolicy',
       target: certArn
     }));
 

@@ -81,14 +81,15 @@ All tenant, user, device metadata, telemetry logs, setup requests, and alarms **
 
 ## 7. Version Control & Git Workflow Rules
 
-- **Permitted Git Actions (`git add` & `git commit`)**: The AI agent is authorized to run `git add` and `git commit` to stage and save verified working code changes when appropriate or requested.
+- **Permitted Git Actions (`git add` & `git commit`)**: The AI agent is pre-authorized to run `git add .`, `git add <file>`, and `git commit -m "..."` to stage and save verified working code changes when appropriate or requested.
 - **Strictly Prohibited Git Action (`git push`)**: The AI agent **MUST NEVER** execute `git push`. Pushing code to remote repositories must always be performed manually by the user.
 
 ---
 
 ## 8. Development Commands & Terminal Authorization
 
-- **Permitted CLI & Node.js Commands**: The AI agent is pre-authorized to execute standard Node.js, NPM, and workspace development commands (e.g., `node`, `npm run dev`, `npm run build`, `npm test`, `npm install`, `npx`) to run dev servers, execute tests, build packages, check type safety, and inspect runtime logs without requiring routine prompt permissions.
+- **Permitted CLI & Node.js Commands**: The AI agent is pre-authorized to execute standard Node.js scripts (e.g. `node scratch/...`), NPM commands (e.g., `npm run dev`, `npm run build`, `npm test`, `npm install`), and `npx` commands to run dev servers, execute tests, build packages, check type safety, and inspect runtime logs without requiring routine prompt permissions.
+
 
 
 

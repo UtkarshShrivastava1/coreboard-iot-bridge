@@ -35,9 +35,14 @@ interface LogMessage {
 export default function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [endpoint, setEndpoint] = useState('a3jn1jb4u5t66x-ats.iot.ap-south-1.amazonaws.com');
-  const [tenantId, setTenantId] = useState('stark-ind');
-  const [thingName, setThingName] = useState('pump-101');
+  const [tenantId, setTenantId] = useState('');
+  const [thingName, setThingName] = useState('');
   const [deviceType, setDeviceType] = useState('pump');
+  
+  const [fetchedTenants, setFetchedTenants] = useState<{ tenantId: string; companyName: string }[]>([]);
+  const [fetchedDevices, setFetchedDevices] = useState<{ deviceId: string; deviceType: string }[]>([]);
+  const [loadingTenants, setLoadingTenants] = useState(false);
+  const [loadingDevices, setLoadingDevices] = useState(false);
   
   const [certFileContent, setCertFileContent] = useState('');
   const [keyFileContent, setKeyFileContent] = useState('');
@@ -165,6 +170,58 @@ export default function App() {
       s.disconnect();
     };
   }, [selectedDeviceName]);
+
+  // Fetch tenants on mount
+  useEffect(() => {
+    const getTenants = async () => {
+      setLoadingTenants(true);
+      try {
+        const res = await fetch('http://localhost:4000/api/public/tenants');
+        if (res.ok) {
+          const data = await res.json();
+          setFetchedTenants(data);
+          if (data.length > 0) {
+            setTenantId(data[0].tenantId);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch tenants for simulator:", err);
+      } finally {
+        setLoadingTenants(false);
+      }
+    };
+    getTenants();
+  }, []);
+
+  // Fetch devices when tenantId changes
+  useEffect(() => {
+    if (!tenantId) {
+      setFetchedDevices([]);
+      setThingName('');
+      return;
+    }
+    const getDevices = async () => {
+      setLoadingDevices(true);
+      try {
+        const res = await fetch(`http://localhost:4000/api/public/tenants/${tenantId}/devices`);
+        if (res.ok) {
+          const data = await res.json();
+          setFetchedDevices(data);
+          if (data.length > 0) {
+            setThingName(data[0].deviceId);
+            setDeviceType(data[0].deviceType);
+          } else {
+            setThingName('');
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch devices for simulator:", err);
+      } finally {
+        setLoadingDevices(false);
+      }
+    };
+    getDevices();
+  }, [tenantId]);
 
   // Scroll terminal logs to bottom
   useEffect(() => {
@@ -376,26 +433,48 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Tenant ID Slug</label>
-                  <input 
-                    type="text" 
+                  <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                    Select Tenant
+                    {loadingTenants && <span className="text-[9px] text-cyan-400 animate-pulse">(...)</span>}
+                  </label>
+                  <select 
                     value={tenantId}
                     onChange={(e) => setTenantId(e.target.value)}
-                    placeholder="e.g. stark-ind"
-                    className="w-full text-xs bg-[#0b0f19] border border-[#334155] rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors" 
+                    className="w-full text-xs bg-[#0b0f19] border border-[#334155] rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors"
                     required
-                  />
+                  >
+                    <option value="">-- Choose Tenant --</option>
+                    {fetchedTenants.map(t => (
+                      <option key={t.tenantId} value={t.tenantId}>
+                        {t.companyName} ({t.tenantId})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Thing Name (ID)</label>
-                  <input 
-                    type="text" 
+                  <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                    Select Device
+                    {loadingDevices && <span className="text-[9px] text-cyan-400 animate-pulse">(...)</span>}
+                  </label>
+                  <select 
                     value={thingName}
-                    onChange={(e) => setThingName(e.target.value)}
-                    placeholder="e.g. pump-101"
-                    className="w-full text-xs font-mono bg-[#0b0f19] border border-[#334155] rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors" 
+                    onChange={(e) => {
+                      setThingName(e.target.value);
+                      const dev = fetchedDevices.find(d => d.deviceId === e.target.value);
+                      if (dev) {
+                        setDeviceType(dev.deviceType);
+                      }
+                    }}
+                    className="w-full text-xs font-mono bg-[#0b0f19] border border-[#334155] rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors"
                     required
-                  />
+                  >
+                    <option value="">-- Choose Device --</option>
+                    {fetchedDevices.map(d => (
+                      <option key={d.deviceId} value={d.deviceId}>
+                        {d.deviceId}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
