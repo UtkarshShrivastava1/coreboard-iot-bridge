@@ -2222,20 +2222,45 @@ export default function App() {
             {/* Modal Content */}
             <div className="p-6 space-y-4">
               
+              {/* Target Broker Endpoint */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AWS IoT Broker Target Endpoint</h4>
+                <div className="bg-black/40 border border-slate-900 rounded-lg p-3 space-y-1.5 text-[10px]">
+                  <div>
+                    <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Broker Hostname</span>
+                    <code className="text-cyan-400 select-all block font-bold">a3jn1jb4u5t66x-ats.iot.ap-south-1.amazonaws.com</code>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-400 text-[9px] pt-1 border-t border-slate-900">
+                    <span>Protocol: <strong className="text-emerald-400">mqtts://</strong></span>
+                    <span>Port: <strong className="text-emerald-400">8883 (mTLS)</strong></span>
+                  </div>
+                </div>
+              </div>
+
               {/* MQTT Topics */}
               <div className="space-y-2">
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">MQTT Topics</h4>
                 <div className="bg-black/40 border border-slate-900 rounded-lg p-3 space-y-2 text-[10px]">
                   <div>
                     <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Uplink (Publish Telemetry)</span>
-                    <code className="text-emerald-400 select-all block">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/pub</code>
+                    <code className="text-emerald-400 select-all block font-bold">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/pub</code>
                   </div>
                   {["smart_lock", "smart_switch"].includes(selectedTemplateDevice.device_type) && (
                     <div>
                       <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Downlink (Subscribe to commands)</span>
-                      <code className="text-cyan-400 select-all block">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/sub</code>
+                      <code className="text-cyan-400 select-all block font-bold">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/sub</code>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Required mTLS Certs Checklist */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Required mTLS Credentials Package</h4>
+                <div className="bg-black/40 border border-slate-900 rounded-lg p-2.5 text-[9px] text-slate-300 font-mono flex flex-wrap gap-2">
+                  <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">✓ AmazonRootCA1.pem</span>
+                  <span className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 flex items-center gap-1">✓ Device_certificate.crt</span>
+                  <span className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300 flex items-center gap-1">✓ Private_key.key</span>
                 </div>
               </div>
 

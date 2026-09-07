@@ -76,6 +76,7 @@ export default function App() {
     certificatePem: string;
     privateKeyPem: string;
     certificateArn: string;
+    rootCaPem?: string;
   } | null>(null);
 
   // Tenant Onboarding State
@@ -692,6 +693,18 @@ export default function App() {
                       </span>
                       <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
                     </button>
+
+                    {credentials.rootCaPem && (
+                      <button
+                        onClick={() => downloadCredentialFile(credentials.rootCaPem!, `AmazonRootCA1.pem`)}
+                        className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Download className="h-4 w-4" /> Download Root CA
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-normal">AmazonRootCA1.pem</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -920,6 +933,18 @@ export default function App() {
                       </span>
                       <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
                     </button>
+
+                    {credentials.rootCaPem && (
+                      <button
+                        onClick={() => downloadCredentialFile(credentials.rootCaPem!, `AmazonRootCA1.pem`)}
+                        className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Download className="h-4 w-4" /> Download Root CA
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-normal">AmazonRootCA1.pem</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

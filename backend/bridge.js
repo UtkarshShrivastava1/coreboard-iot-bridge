@@ -444,31 +444,29 @@ mqttClient.on('message', async (topic, message) => {
 
     const timestamp = Date.now();
 
+    // Construct dynamic schema-less data dictionary
+    let telemetryData = {};
+    if (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+      telemetryData = { ...payload.data };
+    } else {
+      const reservedKeys = ['device_id', 'pump_id', 'device_type', 'timestamp', 'status', 'tenant_id'];
+      Object.keys(payload).forEach(key => {
+        if (!reservedKeys.includes(key) && payload[key] !== undefined) {
+          telemetryData[key] = payload[key];
+        }
+      });
+    }
+
     // Construct Single-Table DynamoDB item using existing table schema (device_id=PK, timestamp=SK)
     const dbItem = {
       device_id: `TENANT#${tenantId}`,
       timestamp: `DEVICE#${deviceId}#TIMESTAMP#${timestamp}`,
       actual_device_id: deviceId,
       raw_timestamp: timestamp,
-      device_type: payload.device_type || 'unknown',
+      device_type: payload.device_type || 'custom',
       status: payload.status || 'optimal',
-      data: {
-        flow_rate: payload.flow_rate,
-        temperature: payload.temperature,
-        humidity: payload.humidity,
-        pressure: payload.pressure,
-        voltage: payload.voltage,
-        current: payload.current,
-        power: payload.power
-      }
+      data: telemetryData
     };
-
-    // Remove undefined fields
-    Object.keys(dbItem.data).forEach(key => {
-      if (dbItem.data[key] === undefined) {
-        delete dbItem.data[key];
-      }
-    });
 
     // Write to DynamoDB Table
     try {
@@ -863,7 +861,8 @@ app.post('/api/superadmin/requests/approve', authenticateToken, requireRole(['SU
       credentials: {
         certificatePem: certPem,
         privateKeyPem: privateKeyPem,
-        certificateArn: certArn
+        certificateArn: certArn,
+        rootCaPem: caCert ? caCert.toString('utf-8') : ''
       }
     });
 
