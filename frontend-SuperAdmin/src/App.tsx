@@ -13,9 +13,13 @@ import {
   Download, 
   ArrowRight,
   Database,
-  Sliders,
   Trash2,
-  Settings
+  Cpu,
+  Layers,
+  ChevronRight,
+  Menu,
+  KeyRound,
+  PlusCircle
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -45,7 +49,8 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
-  // Active workspace state
+  // Layout & Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending_requests' | 'tenant_manager' | 'direct_provision' | 'tenant_profiles'>('pending_requests');
 
   // Tenant Profile / Devices View state
@@ -90,9 +95,7 @@ export default function App() {
   // Auto-fetch pending requests when logged in
   useEffect(() => {
     if (token) {
-      // Decode simple details or fetch superadmin profile
-      // For now, set dummy superadmin name
-      setSuperadmin({ email: 'super@coreboard.com', role: 'SUPERADMIN' });
+      setSuperadmin({ email: 'superadmin@coreboard.io', role: 'SUPERADMIN' });
       fetchPendingRequests();
       fetchTenants();
     }
@@ -140,10 +143,10 @@ export default function App() {
     setDirectSuccess(null);
     
     setProvLogs([
-      `[AWS] Initializing direct authorization payload...`,
-      `[AWS] Target Client ID: ${directDeviceId}`,
-      `[AWS] Target Tenant: ${selectedTenantId}`,
-      `[AWS] Generating secure cryptographic keys...`
+      `[AWS IoT] Initializing authorization payload...`,
+      `[AWS IoT] Target Thing Name: ${directDeviceId}`,
+      `[AWS IoT] Target Tenant Partition: TENANT#${selectedTenantId}`,
+      `[AWS IoT] Generating mTLS X.509 Cryptographic Keys...`
     ]);
 
     try {
@@ -160,169 +163,30 @@ export default function App() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to provision device.');
+      if (!res.ok) throw new Error(data.error || 'Direct provisioning failed.');
 
       setProvLogs(prev => [
         ...prev,
-        `[AWS] X.509 Cryptographic Key Pair and Certificate generated.`,
-        `[AWS] Client Thing created in IoT Core registry.`,
-        `[AWS] Attached certificate to Thing principal.`,
-        `[AWS] Associated Multi-Tenant connection policies attached.`,
-        `[DynamoDB] Device metadata logged.`,
-        `[SUCCESS] Device ${directDeviceId} provisioned successfully.`
+        `[AWS IoT] Registered Thing: ${directDeviceId}`,
+        `[AWS IoT] Generated Certificate & RSA Private Key`,
+        `[AWS IoT] Bound Certificate Principal to Thing Name`,
+        `[AWS IoT] Attached MultiTenantDevicePolicy & MultiTenantBackendPolicy`,
+        `[DynamoDB] Saved METADATA#DEVICE#${directDeviceId} under TENANT#${selectedTenantId}`,
+        `[SUCCESS] Provisioning complete. Download credentials package below.`
       ]);
 
       setCredentials(data.credentials);
-      setDirectSuccess(`Device '${directDeviceId}' successfully provisioned directly under '${selectedTenantId}'.`);
+      setDirectSuccess(data.message || 'Device provisioned successfully.');
       setDirectDeviceId('');
     } catch (err: any) {
-      setProvLogs(prev => [...prev, `[ERROR] Direct provisioning failed: ${err.message}`]);
       setDirectError(err.message);
+      setProvLogs(prev => [...prev, `[ERROR] ${err.message}`]);
     } finally {
       setIsProvisioning(false);
     }
   };
 
-  const fetchTenantDevices = async (tenantIdVal: string) => {
-    if (!tenantIdVal) {
-      setTenantDevices([]);
-      return;
-    }
-    setLoadingTenantDevices(true);
-    setDeviceResetSuccess(null);
-    setDeviceResetError(null);
-    setDeviceDeleteSuccess(null);
-    setDeviceDeleteError(null);
-    setResetCredentialsData(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tenantIdVal}/devices`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch tenant devices.');
-      setTenantDevices(data);
-    } catch (err: any) {
-      console.error(err);
-      setTenantDevices([]);
-    } finally {
-      setLoadingTenantDevices(false);
-    }
-  };
-
-  const handleResetDeviceCredentials = async (tenantIdVal: string, deviceIdVal: string) => {
-    if (!window.confirm(`Are you sure you want to regenerate credentials for device ${deviceIdVal}? The old certificates will be permanently deleted and invalidated in AWS IoT Core.`)) {
-      return;
-    }
-    setDeviceResetSuccess(null);
-    setDeviceResetError(null);
-    setResetCredentialsData(null);
-    setProvLogs(prev => [...prev, `[INFO] Initiating credential regeneration for ${deviceIdVal}...`]);
-    try {
-      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tenantIdVal}/devices/${deviceIdVal}/reset`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to regenerate credentials.');
-
-      setProvLogs(prev => [
-        ...prev,
-        `[AWS] Old certificates detached and deleted.`,
-        `[AWS] New X.509 Cryptographic Key Pair generated.`,
-        `[AWS] Attached new principal to Thing ${deviceIdVal}.`,
-        `[DynamoDB] Device metadata updated.`,
-        `[SUCCESS] Credentials regenerated successfully for ${deviceIdVal}.`
-      ]);
-
-      setResetCredentialsData(data.credentials);
-      setDeviceResetSuccess(`Credentials successfully regenerated for device ${deviceIdVal}. Please download the new certificate package.`);
-      fetchTenantDevices(tenantIdVal); // Refresh device list
-    } catch (err: any) {
-      setDeviceResetError(err.message);
-      setProvLogs(prev => [...prev, `[ERROR] Credential regeneration failed: ${err.message}`]);
-    }
-  };
-
-  const handleDeleteDevice = async (tenantIdVal: string, deviceIdVal: string) => {
-    if (!window.confirm(`WARNING: Are you sure you want to delete device ${deviceIdVal} completely? This will delete the Thing from AWS IoT Core, deactivate and delete its certificates, and remove its metadata from DynamoDB. This action is irreversible.`)) {
-      return;
-    }
-    setDeviceDeleteSuccess(null);
-    setDeviceDeleteError(null);
-    setProvLogs(prev => [...prev, `[INFO] Deleting device ${deviceIdVal}...`]);
-    try {
-      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tenantIdVal}/devices/${deviceIdVal}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete device.');
-
-      setProvLogs(prev => [
-        ...prev,
-        `[AWS] Certs detached and deleted.`,
-        `[AWS] Thing deleted from registry.`,
-        `[DynamoDB] Device metadata removed.`,
-        `[SUCCESS] Device ${deviceIdVal} completely deleted.`
-      ]);
-
-      setDeviceDeleteSuccess(`Device ${deviceIdVal} has been completely deleted.`);
-      fetchTenantDevices(tenantIdVal); // Refresh device list
-    } catch (err: any) {
-      setDeviceDeleteError(err.message);
-      setProvLogs(prev => [...prev, `[ERROR] Deleting device failed: ${err.message}`]);
-    }
-  };
-
-  // Auth Handlers
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    setAuthSuccess(null);
-
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-    const payload = isLogin 
-      ? { email, password, tenantId: 'superadmin' }
-      : { 
-          email, 
-          password, 
-          role: 'SUPERADMIN', 
-          tenantId: 'superadmin', 
-          companyName: 'Coreboard',
-          signupSecret: secretKey 
-        };
-
-    try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed.');
-      }
-
-      if (isLogin) {
-        if (data.tenant?.role !== 'SUPERADMIN') {
-          throw new Error('Forbidden: Only SuperAdmins can access this portal.');
-        }
-        localStorage.setItem('superadmin_token', data.token);
-        setToken(data.token);
-      } else {
-        setAuthSuccess('SuperAdmin registered successfully! Please log in.');
-        setIsLogin(true);
-      }
-    } catch (err: any) {
-      setAuthError(err.message);
-    }
-  };
-
-  // Fetch Pending Requests Queue
+  // Fetch Pending Requests
   const fetchPendingRequests = async () => {
     if (!token) return;
     setLoadingRequests(true);
@@ -331,7 +195,7 @@ export default function App() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch pending requests.');
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch queue.');
       setPendingRequests(data || []);
     } catch (err: any) {
       console.error(err);
@@ -340,88 +204,189 @@ export default function App() {
     }
   };
 
-  // Approve & Provision mTLS Client in AWS IoT Core
-  const handleApproveRequest = async (reqItem: PendingRequest) => {
+  // Approve Pending Device Request
+  const handleApprove = async (req: PendingRequest) => {
     if (!token) return;
     setIsProvisioning(true);
     setCredentials(null);
     setProvLogs([
-      `[AWS] Requesting device authorization payload...`,
-      `[AWS] Target Client ID: ${reqItem.deviceId}`,
-      `[AWS] Initializing secure certificate generation...`
+      `[AWS IoT] Initializing authorization for pending request...`,
+      `[AWS IoT] Target Thing Name: ${req.deviceId}`,
+      `[AWS IoT] Target Tenant: ${req.tenantId}`,
+      `[AWS IoT] Calling CreateThingCommand...`
     ]);
 
     try {
       const res = await fetch(`${API_BASE}/api/superadmin/requests/approve`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          tenantId: reqItem.tenantId,
-          deviceId: reqItem.deviceId,
-          deviceType: reqItem.deviceType
+          tenantId: req.tenantId,
+          deviceId: req.deviceId,
+          deviceType: req.deviceType
         })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to approve request.');
+      if (!res.ok) throw new Error(data.error || 'Approval failed.');
 
       setProvLogs(prev => [
         ...prev,
-        `[AWS] mTLS Cryptographic Key Pair and Certificate generated.`,
-        `[AWS] Client Thing created: ${reqItem.deviceId}`,
-        `[AWS] Certificate attached to Thing principal.`,
-        `[AWS] Associated Multi-Tenant Policy attached.`,
-        `[DynamoDB] Device metadata logged under Tenant: ${reqItem.tenantId}`,
-        `[DynamoDB] Deleted setup request key.`,
-        `[SUCCESS] Device ${reqItem.deviceId} provisioned successfully.`
+        `[AWS IoT] Registered Thing: ${req.deviceId}`,
+        `[AWS IoT] Generated Certificate & Key Pair`,
+        `[AWS IoT] Attached MultiTenant Policies`,
+        `[DynamoDB] Logged METADATA#DEVICE#${req.deviceId}`,
+        `[DynamoDB] Deleted setup request from queue`,
+        `[SUCCESS] Credentials package ready for download.`
       ]);
 
       setCredentials(data.credentials);
-      fetchPendingRequests(); // reload list
-
+      fetchPendingRequests();
     } catch (err: any) {
-      setProvLogs(prev => [...prev, `[ERROR] Provisioning failed: ${err.message}`]);
+      setProvLogs(prev => [...prev, `[ERROR] ${err.message}`]);
     } finally {
       setIsProvisioning(false);
     }
   };
 
-  // Onboard New Tenant Organization
-  const handleSuperadminRegisterTenant = async (e: React.FormEvent) => {
+  // Fetch Devices under a specific Tenant
+  const fetchTenantDevices = async (tId: string) => {
+    if (!token || !tId) return;
+    setSelectedProfileTenantId(tId);
+    setLoadingTenantDevices(true);
+    setResetCredentialsData(null);
+    setDeviceResetSuccess(null);
+    setDeviceResetError(null);
+    setDeviceDeleteSuccess(null);
+    setDeviceDeleteError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tId}/devices`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch devices for tenant.');
+      setTenantDevices(data || []);
+    } catch (err: any) {
+      console.error(err);
+      setDeviceResetError(err.message);
+    } finally {
+      setLoadingTenantDevices(false);
+    }
+  };
+
+  // Regenerate / Reset Credentials for a Device
+  const handleRegenerateCredentials = async (tId: string, dId: string) => {
+    if (!token) return;
+    setResetCredentialsData(null);
+    setDeviceResetSuccess(null);
+    setDeviceResetError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tId}/devices/${dId}/regenerate-keys`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to regenerate credentials.');
+      setResetCredentialsData(data.credentials);
+      setDeviceResetSuccess(`Credentials successfully regenerated for device ${dId}. Download updated package below.`);
+    } catch (err: any) {
+      setDeviceResetError(err.message);
+    }
+  };
+
+  // Revoke / Delete a Device
+  const handleDeleteDevice = async (tId: string, dId: string) => {
+    if (!token || !window.confirm(`Revoke and delete device ${dId} from AWS IoT Core & DynamoDB?`)) return;
+    setDeviceDeleteSuccess(null);
+    setDeviceDeleteError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tId}/devices/${dId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete device.');
+      setDeviceDeleteSuccess(`Device ${dId} has been revoked and removed.`);
+      fetchTenantDevices(tId);
+    } catch (err: any) {
+      setDeviceDeleteError(err.message);
+    }
+  };
+
+  // Onboard New Tenant
+  const handleOnboardTenant = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token || !superadminCompanyName || !superadminTenantId || !superadminEmail || !superadminPassword) return;
     setOnboardError(null);
     setOnboardSuccess(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/signup`, {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/onboard`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          email: superadminEmail,
-          password: superadminPassword,
-          role: 'ADMIN',
+          companyName: superadminCompanyName,
           tenantId: superadminTenantId,
-          companyName: superadminCompanyName
+          email: superadminEmail,
+          password: superadminPassword
         })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to onboard tenant.');
-
-      setOnboardSuccess(`Tenant '${superadminCompanyName}' (${superadminTenantId}) successfully onboarded.`);
+      if (!res.ok) throw new Error(data.error || 'Onboarding failed.');
+      setOnboardSuccess(`Tenant ${superadminCompanyName} (${superadminTenantId}) onboarded successfully!`);
       setSuperadminCompanyName('');
       setSuperadminTenantId('');
       setSuperadminEmail('');
       setSuperadminPassword('');
+      fetchTenants();
     } catch (err: any) {
       setOnboardError(err.message);
     }
   };
 
-  // Helper: Download generated keys
+  // Handle Login / Signup
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    const endpoint = isLogin ? `${API_BASE}/api/superadmin/login` : `${API_BASE}/api/superadmin/signup`;
+    const payload = isLogin ? { email, password } : { email, password, secretKey };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Authentication failed');
+
+      if (isLogin) {
+        localStorage.setItem('superadmin_token', data.token);
+        setToken(data.token);
+        setSuperadmin(data.superadmin);
+      } else {
+        setAuthSuccess('SuperAdmin registered! Please log in.');
+        setIsLogin(true);
+      }
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  // Helper: Download credential files
   const downloadCredentialFile = (content: string, filename: string) => {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -431,112 +396,106 @@ export default function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
-  // Auth Screen Template
+  // Auth Screen if unauthenticated
   if (!token) {
     return (
-      <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center p-6 relative overflow-hidden">
-        {/* Glow decoration */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center p-6 relative overflow-hidden font-sans">
+        {/* Glowing background elements */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
 
-        <div className="w-full max-w-md bg-[#0f172a] border border-[#1e293b] rounded-2xl p-8 shadow-2xl relative z-10">
-          <div className="text-center mb-8">
-            <div className="inline-flex bg-gradient-to-tr from-indigo-500 to-blue-600 p-3 rounded-xl text-white shadow-xl shadow-indigo-500/15 mb-4">
-              <ShieldCheck className="h-7 w-7" />
+        <div className="w-full max-w-md bg-[#0f172a]/90 backdrop-blur-xl border border-indigo-500/20 rounded-2xl shadow-2xl p-8 relative z-10">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 mb-4">
+              <ShieldCheck className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              Coreboard SuperAdmin
-            </h1>
-            <p className="text-xs text-indigo-400 font-mono tracking-wider uppercase mt-1">
-              Internal Control Panel
-            </p>
+            <h1 className="text-xl font-bold orbitron tracking-wider text-white uppercase">Coreboard SuperAdmin</h1>
+            <p className="text-xs font-mono text-slate-400 mt-1">Multi-Tenant IoT Provisioning & Operations Portal</p>
           </div>
 
           {authError && (
-            <div className="bg-rose-950/40 border border-rose-500/30 text-rose-300 p-3 rounded-lg text-xs font-mono mb-6 flex items-center gap-2">
-              <ShieldAlert className="w-4.5 h-4.5 shrink-0" />
+            <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3.5 rounded-xl text-xs font-mono mb-6 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{authError}</span>
             </div>
           )}
+
           {authSuccess && (
-            <div className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-3 rounded-lg text-xs font-mono mb-6 flex items-center gap-2">
-              <CheckCircle2 className="w-4.5 h-4.5 shrink-0" />
+            <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3.5 rounded-xl text-xs font-mono mb-6 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>{authSuccess}</span>
             </div>
           )}
 
-          <form onSubmit={handleAuthSubmit} className="space-y-4 text-xs font-mono">
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
             <div>
-              <label className="block text-slate-400 mb-1.5 uppercase font-bold tracking-wide">Security Email</label>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5 font-bold">Admin Email</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
-                  <User className="h-4 w-4" />
-                </span>
-                <input 
-                  type="email" 
+                <User className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                <input
+                  type="email"
                   required
+                  placeholder="superadmin@coreboard.io"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="super@coreboard.com"
-                  className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl pl-10 pr-3 py-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1.5 uppercase font-bold tracking-wide">Access Password</label>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5 font-bold">Secret Password</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
-                  <Lock className="h-4 w-4" />
-                </span>
-                <input 
-                  type="password" 
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                <input
+                  type="password"
                   required
+                  placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl pl-10 pr-3 py-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                 />
               </div>
             </div>
 
             {!isLogin && (
               <div>
-                <label className="block text-slate-400 mb-1.5 uppercase font-bold tracking-wide">Superadmin Secret Key</label>
+                <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5 font-bold">SuperAdmin Secret Key</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
-                    <Lock className="h-4 w-4" />
-                  </span>
-                  <input 
-                    type="password" 
+                  <KeyRound className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                  <input
+                    type="password"
                     required
+                    placeholder="Enter system secret key"
                     value={secretKey}
                     onChange={(e) => setSecretKey(e.target.value)}
-                    placeholder="Enter registration key"
-                    className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl pl-10 pr-3 py-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                   />
                 </div>
               </div>
             )}
 
-            <button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-1.5 text-xs uppercase"
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs font-mono uppercase tracking-wider shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 mt-6"
             >
-              <span>{isLogin ? 'Grant Access' : 'Register Officer'}</span>
-              <ArrowRight className="h-4 w-4" />
+              <span>{isLogin ? 'Authenticate SuperAdmin' : 'Register SuperAdmin'}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          <div className="text-center mt-6">
-            <button 
-              onClick={() => { setIsLogin(!isLogin); setAuthError(null); setAuthSuccess(null); }}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-mono transition-colors"
+          <div className="mt-6 text-center border-t border-slate-800/80 pt-4">
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setAuthError(null);
+                setAuthSuccess(null);
+              }}
+              className="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-all"
             >
-              {isLogin ? "Need a SuperAdmin account? Sign Up" : "Already registered? Log In"}
+              {isLogin ? "Need a new SuperAdmin account? Register" : "Already registered? Sign In"}
             </button>
           </div>
         </div>
@@ -544,536 +503,679 @@ export default function App() {
     );
   }
 
-  // Dashboard Panel Template
+  // Dashboard Layout
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-[#f1f5f9] flex flex-col">
-      {/* Header */}
-      <header className="border-b border-[#1e293b] bg-[#0f172a] px-6 py-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-indigo-500 to-blue-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/20">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              Coreboard SuperAdmin Console
-            </h1>
-            <p className="text-xs text-indigo-400 font-mono font-medium uppercase tracking-wider">
-              Tenant Orchestration & Device Provisioning
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="text-right font-mono text-xs hidden md:block">
-            <div className="text-slate-300">{superadmin?.email}</div>
-            <div className="text-indigo-400 text-[10px] uppercase font-bold">Officer Status: Active</div>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-mono transition-colors flex items-center gap-1.5"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Workspace Tabs */}
-      <div className="bg-[#0f172a]/40 border-b border-[#1e293b] px-6 py-2.5 flex items-center gap-4">
-        <button 
-          onClick={() => setActiveTab('pending_requests')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'pending_requests' 
-              ? 'bg-indigo-600 text-white shadow-md' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Clock className="h-4 w-4" />
-          Pending Requests ({pendingRequests.length})
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('tenant_manager')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'tenant_manager' 
-              ? 'bg-indigo-600 text-white shadow-md' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Building2 className="h-4 w-4" />
-          Tenant Manager
-        </button>
-
-        <button 
-          onClick={() => { setActiveTab('direct_provision'); fetchTenants(); }}
-          className={`px-4 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'direct_provision' 
-              ? 'bg-indigo-600 text-white shadow-md' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Database className="h-4 w-4" />
-          Direct Provisioning
-        </button>
-
-        <button 
-          onClick={() => { setActiveTab('tenant_profiles'); fetchTenants(); }}
-          className={`px-4 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'tenant_profiles' 
-              ? 'bg-indigo-600 text-white shadow-md' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Sliders className="h-4 w-4" />
-          Tenant Profiles
-        </button>
-      </div>
-
-      {/* Main Workspace */}
-      <main className="flex-1 p-6 overflow-y-auto space-y-6">
-
-        {/* Tab 1: Pending Device Requests */}
-        {activeTab === 'pending_requests' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Logs Terminal & Credentials */}
-            <div className="lg:col-span-5 space-y-6">
-              
-              {/* Terminal Logs */}
-              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 shadow-xl flex flex-col h-[280px]">
-                <div className="flex items-center gap-2 mb-3">
-                  <Terminal className="w-4 h-4 text-indigo-400 animate-pulse" />
-                  <h3 className="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider">AWS Provisioning Stream</h3>
-                </div>
-                <div className="flex-1 bg-[#0b0f19] border border-slate-800 rounded-lg p-3 font-mono text-[10px] overflow-y-auto flex flex-col gap-1.5 select-text">
-                  {provLogs.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-slate-600">
-                      &gt;&gt; CONSOLE READY. APPROVE A DEVICE TO COMMENCE &lt;&lt;
-                    </div>
-                  ) : (
-                    provLogs.map((log, idx) => {
-                      let color = 'text-slate-400';
-                      if (log.includes('[ERROR]')) color = 'text-rose-500 font-bold';
-                      if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
-                      if (log.includes('[AWS]')) color = 'text-cyan-400';
-                      return <div key={idx} className={`${color} leading-4 border-l border-slate-800 pl-2`}>{log}</div>;
-                    })
-                  )}
-                </div>
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex font-sans overflow-x-hidden">
+      
+      {/* 1. Futuristic Left Glassmorphic Sidebar */}
+      <aside 
+        className={`fixed top-0 left-0 bottom-0 z-40 bg-[#090e1a]/95 backdrop-blur-xl border-r border-slate-800/80 transition-all duration-300 flex flex-col justify-between ${
+          sidebarOpen ? 'w-64' : 'w-20'
+        }`}
+      >
+        <div>
+          {/* Brand Header */}
+          <div className="h-16 px-5 border-b border-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
+                <ShieldCheck className="w-5 h-5 text-white" />
               </div>
-
-              {/* Downloads Panel */}
-              {credentials && (
-                <div className="bg-[#0b1626]/90 border border-cyan-500/30 rounded-xl p-5 shadow-xl animate-[fadeIn_0.5s_ease-out]">
-                  <h3 className="text-xs font-bold font-mono text-cyan-400 mb-2 flex items-center gap-2 uppercase tracking-wide">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                    mTLS Credentials Generated
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-mono leading-relaxed mb-4">
-                    Cryptographic certificates successfully established in AWS IoT Core registry. Download files to flash onto ESP32 simulator client.
-                  </p>
-
-                  <div className="flex flex-col gap-2 font-mono text-xs">
-                    <button
-                      onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
-                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Download className="h-4 w-4" /> Download Certificate
-                      </span>
-                      <span className="text-[9px] text-slate-500 font-normal">device.pem.crt</span>
-                    </button>
-
-                    <button
-                      onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
-                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Download className="h-4 w-4" /> Download Private Key
-                      </span>
-                      <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
-                    </button>
-
-                    {credentials.rootCaPem && (
-                      <button
-                        onClick={() => downloadCredentialFile(credentials.rootCaPem!, `AmazonRootCA1.pem`)}
-                        className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Download className="h-4 w-4" /> Download Root CA
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-normal">AmazonRootCA1.pem</span>
-                      </button>
-                    )}
-                  </div>
+              {sidebarOpen && (
+                <div className="flex flex-col truncate">
+                  <span className="text-sm font-bold orbitron text-white tracking-wider uppercase">COREBOARD</span>
+                  <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-widest font-bold">SUPERADMIN</span>
                 </div>
               )}
-
             </div>
-
-            {/* Queue Table */}
-            <div className="lg:col-span-7 bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Pending Device Registry Queue</h3>
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">Authorization and cryptographic credentials generation queue.</p>
-                </div>
-                <button 
-                  onClick={fetchPendingRequests}
-                  className="text-xs font-mono text-cyan-400 flex items-center gap-1.5 hover:text-cyan-300 transition-all bg-slate-900 border border-[#1e293b] px-3.5 py-1.5 rounded-lg font-bold"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Queue
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left font-mono text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-wider pb-3 font-bold">
-                      <th className="pb-3">Tenant ID</th>
-                      <th className="pb-3">Device Name</th>
-                      <th className="pb-3">Profile</th>
-                      <th className="pb-3">Date Requested</th>
-                      <th className="pb-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingRequests ? (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-slate-500">
-                          Scanning queue in DynamoDB...
-                        </td>
-                      </tr>
-                    ) : pendingRequests.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-slate-600 italic">
-                          No pending requests in authorization queue.
-                        </td>
-                      </tr>
-                    ) : (
-                      pendingRequests.map((reqItem, idx) => (
-                        <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-all">
-                          <td className="py-3.5 text-indigo-400 font-bold">{reqItem.tenantId}</td>
-                          <td className="py-3.5 text-slate-200">{reqItem.deviceId}</td>
-                          <td className="py-3.5 text-slate-400 uppercase text-[10px] tracking-wider">{reqItem.deviceType}</td>
-                          <td className="py-3.5 text-slate-500">
-                            {new Date(reqItem.created_at || Date.now()).toLocaleString()}
-                          </td>
-                          <td className="py-3.5 text-right">
-                            <button
-                              disabled={isProvisioning}
-                              onClick={() => handleApproveRequest(reqItem)}
-                              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all text-[10px] uppercase shadow-lg shadow-emerald-600/15"
-                            >
-                              Approve & Provision
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+            
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
           </div>
-        )}
 
-        {/* Tab 2: Onboard Tenant */}
-        {activeTab === 'tenant_manager' && (
-          <div className="max-w-xl mx-auto bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl">
-            <div className="flex items-center gap-2.5 mb-2 border-b border-[#1e293b] pb-4">
-              <Building2 className="w-5 h-5 text-indigo-400" />
-              <div>
-                <h3 className="text-base font-semibold text-slate-200">Onboard New Tenant Company</h3>
-                <p className="text-[10px] text-slate-500 font-mono mt-0.5">Establishes isolated partition and registers the initial Tenant Admin account.</p>
+          {/* System Health Status Badge */}
+          {sidebarOpen && (
+            <div className="mx-4 my-4 p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 font-mono text-[10px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 uppercase tracking-wider">AWS IoT Core</span>
+                <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Active
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 uppercase tracking-wider">DynamoDB Table</span>
+                <span className="text-cyan-400 font-bold">Single-Table</span>
               </div>
             </div>
+          )}
 
-            {onboardError && (
-              <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3 rounded-lg text-xs font-mono mb-4 mt-4 flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 shrink-0" />
-                <span>{onboardError}</span>
-              </div>
-            )}
-            {onboardSuccess && (
-              <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3 rounded-lg text-xs font-mono mb-4 mt-4 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{onboardSuccess}</span>
-              </div>
-            )}
+          {/* Sidebar Menu Items */}
+          <nav className="px-3 py-2 space-y-1.5 font-mono text-xs">
+            <button
+              onClick={() => setActiveTab('pending_requests')}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                activeTab === 'pending_requests'
+                  ? 'bg-gradient-to-r from-indigo-600/30 to-cyan-500/10 border border-indigo-500/50 text-white font-bold shadow-lg shadow-indigo-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <Clock className={`w-4 h-4 shrink-0 ${activeTab === 'pending_requests' ? 'text-cyan-400' : ''}`} />
+              {sidebarOpen && (
+                <div className="flex items-center justify-between w-full">
+                  <span className="truncate">Pending Requests</span>
+                  {pendingRequests.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold">
+                      {pendingRequests.length}
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
 
-            <form onSubmit={handleSuperadminRegisterTenant} className="space-y-4 font-mono text-xs mt-4">
-              <div>
-                <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Company / Organization Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Stark Industries"
-                  value={superadminCompanyName}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSuperadminCompanyName(val);
-                    const slug = val
-                      .toLowerCase()
-                      .replace(/[^a-z0-9\s-]/g, '')
-                      .replace(/[\s_-]+/g, '-')
-                      .replace(/^-+|-+$/g, '');
-                    setSuperadminTenantId(slug);
-                  }}
-                  className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
-                />
-              </div>
+            <button
+              onClick={() => setActiveTab('tenant_manager')}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                activeTab === 'tenant_manager'
+                  ? 'bg-gradient-to-r from-indigo-600/30 to-cyan-500/10 border border-indigo-500/50 text-white font-bold shadow-lg shadow-indigo-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_manager' ? 'text-cyan-400' : ''}`} />
+              {sidebarOpen && <span className="truncate">Tenant Onboarding</span>}
+            </button>
 
-              <div>
-                <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Tenant Domain ID (Slug)</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. stark-ind"
-                  value={superadminTenantId}
-                  onChange={(e) => setSuperadminTenantId(e.target.value)}
-                  className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
-                />
-              </div>
+            <button
+              onClick={() => setActiveTab('direct_provision')}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                activeTab === 'direct_provision'
+                  ? 'bg-gradient-to-r from-indigo-600/30 to-cyan-500/10 border border-indigo-500/50 text-white font-bold shadow-lg shadow-indigo-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <PlusCircle className={`w-4 h-4 shrink-0 ${activeTab === 'direct_provision' ? 'text-cyan-400' : ''}`} />
+              {sidebarOpen && <span className="truncate">Direct Device Provisioning</span>}
+            </button>
 
-              <div>
-                <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Admin Representative Email</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. admin@stark.com"
-                  value={superadminEmail}
-                  onChange={(e) => setSuperadminEmail(e.target.value)}
-                  className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
-                />
-              </div>
+            <button
+              onClick={() => setActiveTab('tenant_profiles')}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                activeTab === 'tenant_profiles'
+                  ? 'bg-gradient-to-r from-indigo-600/30 to-cyan-500/10 border border-indigo-500/50 text-white font-bold shadow-lg shadow-indigo-500/10'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+            >
+              <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_profiles' ? 'text-cyan-400' : ''}`} />
+              {sidebarOpen && <span className="truncate">Tenant Devices & Keys</span>}
+            </button>
+          </nav>
+        </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Temporary Secret Password</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••••••"
-                  value={superadminPassword}
-                  onChange={(e) => setSuperadminPassword(e.target.value)}
-                  className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
-                />
+        {/* User Profile & Logout Bottom Bar */}
+        <div className="p-4 border-t border-slate-800/80 font-mono">
+          {sidebarOpen ? (
+            <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800/80">
+              <div className="flex items-center gap-2.5 truncate">
+                <div className="w-8 h-8 rounded-lg bg-indigo-950 border border-indigo-500/30 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
+                  SA
+                </div>
+                <div className="flex flex-col truncate">
+                  <span className="text-xs font-bold text-slate-200 truncate">SuperAdmin</span>
+                  <span className="text-[9px] text-slate-500 truncate">{superadmin?.email || 'superadmin@coreboard.io'}</span>
+                </div>
               </div>
 
               <button
-                type="submit"
-                className="w-full py-3.5 rounded-xl font-bold uppercase tracking-wider mt-4 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/10 transition-all flex items-center justify-center gap-1.5"
+                onClick={handleLogout}
+                title="Sign Out"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-all shrink-0"
               >
-                <Database className="h-4 w-4" />
-                Complete Tenant Onboarding
+                <LogOut className="w-4 h-4" />
               </button>
-            </form>
+            </div>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="w-full p-3 rounded-xl bg-slate-900 hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 transition-all flex items-center justify-center"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content View Container */}
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'} flex flex-col min-h-screen`}>
+        
+        {/* Top Header Command Bar */}
+        <header className="h-16 bg-[#090e1a]/80 backdrop-blur-xl border-b border-slate-800/80 px-8 flex items-center justify-between sticky top-0 z-30 font-mono">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xs font-bold orbitron text-white uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              {activeTab === 'pending_requests' && 'Provisioning Request Queue'}
+              {activeTab === 'tenant_manager' && 'Tenant Onboarding & Manager'}
+              {activeTab === 'direct_provision' && 'Direct Device Provisioning'}
+              {activeTab === 'tenant_profiles' && 'Tenant Profiles & Key Registry'}
+            </h1>
           </div>
-        )}
 
-        {/* Tab 3: Direct Provisioning */}
-        {activeTab === 'direct_provision' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Left: Provisioning Logs and Keys */}
-            <div className="lg:col-span-5 space-y-6">
-              
-              {/* Terminal Logs */}
-              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 shadow-xl flex flex-col h-[280px]">
-                <div className="flex items-center gap-2 mb-3">
-                  <Terminal className="w-4 h-4 text-indigo-400 animate-pulse" />
-                  <h3 className="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider">AWS Provisioning Stream</h3>
-                </div>
-                <div className="flex-1 bg-[#0b0f19] border border-slate-800 rounded-lg p-3 font-mono text-[10px] overflow-y-auto flex flex-col gap-1.5 select-text">
-                  {provLogs.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-slate-600">
-                      &gt;&gt; CONSOLE READY. DIRECTLY PROVISION A DEVICE TO COMMENCE &lt;&lt;
-                    </div>
-                  ) : (
-                    provLogs.map((log, idx) => {
-                      let color = 'text-slate-400';
-                      if (log.includes('[ERROR]')) color = 'text-rose-500 font-bold';
-                      if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
-                      if (log.includes('[AWS]')) color = 'text-cyan-400';
-                      return <div key={idx} className={`${color} leading-4 border-l border-slate-800 pl-2`}>{log}</div>;
-                    })
-                  )}
-                </div>
+          <div className="flex items-center gap-6 text-xs">
+            {/* Quick Metrics */}
+            <div className="hidden md:flex items-center gap-4 border-r border-slate-800 pr-6">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 uppercase text-[10px]">Tenants:</span>
+                <span className="text-cyan-400 font-bold">{tenants.length}</span>
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 uppercase text-[10px]">Queue:</span>
+                <span className="text-amber-400 font-bold">{pendingRequests.length}</span>
+              </div>
+            </div>
 
-              {/* Downloads Panel */}
+            <button
+              onClick={() => {
+                fetchPendingRequests();
+                fetchTenants();
+              }}
+              className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1.5 transition-all text-xs"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Refresh Data
+            </button>
+          </div>
+        </header>
+
+        {/* Main Body */}
+        <main className="flex-1 p-8 space-y-6">
+          
+          {/* TAB 1: PENDING PROVISIONING REQUESTS */}
+          {activeTab === 'pending_requests' && (
+            <div className="space-y-6">
+              
+              {/* Credentials Download Panel (when approved) */}
               {credentials && (
-                <div className="bg-[#0b1626]/90 border border-cyan-500/30 rounded-xl p-5 shadow-xl animate-[fadeIn_0.5s_ease-out]">
-                  <h3 className="text-xs font-bold font-mono text-cyan-400 mb-2 flex items-center gap-2 uppercase tracking-wide">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                    mTLS Credentials Generated
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-mono leading-relaxed mb-4">
-                    Cryptographic certificates successfully established in AWS IoT Core registry. Download files to flash onto ESP32 simulator client.
+                <div className="bg-gradient-to-r from-[#0d1c2b] to-[#0f172a] border border-cyan-500/40 rounded-2xl p-6 shadow-2xl animate-[fadeIn_0.3s_ease-out] font-mono">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-2 uppercase tracking-wide">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                      AWS X.509 Cryptographic Credentials Generated
+                    </h3>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                      Provisioned in AWS IoT Core
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                    Cryptographic credentials package established. Download all 3 authentication files below to flash onto the physical hardware controller or Python simulator client.
                   </p>
 
-                  <div className="flex flex-col gap-2 font-mono text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <button
                       onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
-                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                      className="bg-[#0b1626] border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 hover:bg-[#102438] font-bold p-3.5 rounded-xl flex items-center justify-between transition-all group"
                     >
-                      <span className="flex items-center gap-1.5">
-                        <Download className="h-4 w-4" /> Download Certificate
+                      <span className="flex items-center gap-2">
+                        <Download className="h-4 w-4 group-hover:scale-110 transition-transform" /> Device Certificate
                       </span>
-                      <span className="text-[9px] text-slate-500 font-normal">device.pem.crt</span>
+                      <span className="text-[9px] text-slate-500 font-normal">.crt</span>
                     </button>
 
                     <button
                       onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
-                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                      className="bg-[#0b1626] border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 hover:bg-[#102438] font-bold p-3.5 rounded-xl flex items-center justify-between transition-all group"
                     >
-                      <span className="flex items-center gap-1.5">
-                        <Download className="h-4 w-4" /> Download Private Key
+                      <span className="flex items-center gap-2">
+                        <Download className="h-4 w-4 group-hover:scale-110 transition-transform" /> Private Key
                       </span>
-                      <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
+                      <span className="text-[9px] text-slate-500 font-normal">.key</span>
                     </button>
 
                     {credentials.rootCaPem && (
                       <button
                         onClick={() => downloadCredentialFile(credentials.rootCaPem!, `AmazonRootCA1.pem`)}
-                        className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
+                        className="bg-[#0b1626] border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 hover:bg-[#102438] font-bold p-3.5 rounded-xl flex items-center justify-between transition-all group"
                       >
-                        <span className="flex items-center gap-1.5">
-                          <Download className="h-4 w-4" /> Download Root CA
+                        <span className="flex items-center gap-2">
+                          <Download className="h-4 w-4 group-hover:scale-110 transition-transform" /> Root CA Cert
                         </span>
-                        <span className="text-[9px] text-slate-500 font-normal">AmazonRootCA1.pem</span>
+                        <span className="text-[9px] text-slate-500 font-normal">.pem</span>
                       </button>
                     )}
                   </div>
                 </div>
               )}
 
-            </div>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Left: Queue Table */}
+                <div className="lg:col-span-7 bg-[#0f172a]/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl">
+                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800/80 font-mono">
+                    <div>
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Pending Authorization Requests</h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Device registration setup queue submitted by Tenant Administrators.</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-400 font-bold text-xs">
+                      {pendingRequests.length} Pending
+                    </span>
+                  </div>
 
-            {/* Right: Direct Provisioning Form */}
-            <div className="lg:col-span-7 bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl">
-              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#1e293b]">
-                <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Direct Device Provisioning</h3>
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">Provision X.509 certificates and Thing registry slots directly for any tenant.</p>
-                </div>
-                <button 
-                  onClick={fetchTenants}
-                  className="text-[10px] font-mono text-cyan-400 flex items-center gap-1.5 hover:text-cyan-300 transition-all bg-slate-900 border border-[#1e293b] px-3.5 py-1.5 rounded-lg font-bold"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Tenants
-                </button>
-              </div>
-
-              {directError && (
-                <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3 rounded-lg text-xs font-mono mb-4 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 shrink-0" />
-                  <span>{directError}</span>
-                </div>
-              )}
-
-              {directSuccess && (
-                <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3 rounded-lg text-xs font-mono mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>{directSuccess}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleDirectProvision} className="space-y-4 font-mono text-xs">
-                <div>
-                  <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Target Tenant Domain ID</label>
-                  {loadingTenants ? (
-                    <div className="text-slate-500 text-xs">Loading tenants list...</div>
-                  ) : tenants.length === 0 ? (
-                    <div className="text-rose-400 text-xs">No onboarded tenants available. Please onboard a tenant first.</div>
+                  {loadingRequests ? (
+                    <div className="p-12 text-center text-slate-500 font-mono text-xs">
+                      Querying pending requests queue...
+                    </div>
+                  ) : pendingRequests.length === 0 ? (
+                    <div className="border border-dashed border-slate-800/80 rounded-xl p-12 text-center text-slate-600 font-mono text-xs">
+                      No pending device setup requests in queue.
+                    </div>
                   ) : (
-                    <select
-                      value={selectedTenantId}
-                      onChange={(e) => setSelectedTenantId(e.target.value)}
-                      className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
-                    >
-                      {tenants.map(t => (
-                        <option key={t.tenantId} value={t.tenantId}>
-                          {t.companyName} ({t.tenantId})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left font-mono text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-wider pb-3">
+                            <th className="pb-3 font-bold">Tenant Domain</th>
+                            <th className="pb-3 font-bold">Thing Name</th>
+                            <th className="pb-3 font-bold">Hardware Profile</th>
+                            <th className="pb-3 font-bold text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {pendingRequests.map((req, idx) => (
+                            <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
+                              <td className="py-4 font-bold text-slate-200">{req.tenantId}</td>
+                              <td className="py-4 text-cyan-400 font-bold">{req.deviceId}</td>
+                              <td className="py-4 text-slate-400 uppercase text-[10px]">{req.deviceType}</td>
+                              <td className="py-4 text-right">
+                                <button
+                                  onClick={() => handleApprove(req)}
+                                  disabled={isProvisioning}
+                                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 inline-flex items-center gap-1.5"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                  Approve & Provision
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Right: AWS SDK Logs Console */}
+                <div className="lg:col-span-5 bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col h-[480px] font-mono">
+                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                    <Terminal className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-xs font-bold orbitron text-white uppercase tracking-wider">AWS Provisioning Execution Console</h3>
+                  </div>
+                  <div className="flex-1 bg-black/80 rounded-xl p-4 text-[10px] overflow-y-auto border border-slate-900 space-y-2">
+                    {provLogs.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-slate-600 italic">
+                        &gt;&gt; CONSOLE READY. SELECT A PENDING DEVICE REQUEST TO APPROVE &lt;&lt;
+                      </div>
+                    ) : (
+                      provLogs.map((log, idx) => {
+                        let color = 'text-slate-400';
+                        if (log.includes('[ERROR]')) color = 'text-rose-400 font-bold';
+                        if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
+                        if (log.includes('[AWS')) color = 'text-cyan-400';
+                        return <div key={idx} className={`${color} border-l border-slate-800 pl-2`}>{log}</div>;
+                      })
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: TENANT ONBOARDING & MANAGER */}
+          {activeTab === 'tenant_manager' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-mono text-xs">
+              
+              {/* Left: Onboard Tenant Form */}
+              <div className="lg:col-span-5 bg-[#0f172a]/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5" />
+                  </div>
                   <div>
-                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Unique Device ID / Thing Name</label>
+                    <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide">Onboard New Tenant Client</h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Create isolated tenant partition & Tenant Admin credentials.</p>
+                  </div>
+                </div>
+
+                {onboardError && (
+                  <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                    <span>{onboardError}</span>
+                  </div>
+                )}
+
+                {onboardSuccess && (
+                  <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>{onboardSuccess}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleOnboardTenant} className="space-y-4">
+                  <div>
+                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Company Name</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. SMART-LOCK-101"
-                      value={directDeviceId}
-                      onChange={(e) => setDirectDeviceId(e.target.value)}
-                      className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                      placeholder="e.g. Acme Industrial Corp"
+                      value={superadminCompanyName}
+                      onChange={(e) => setSuperadminCompanyName(e.target.value)}
+                      className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Device Profile Type</label>
-                    <select
-                      value={directDeviceType}
-                      onChange={(e) => setDirectDeviceType(e.target.value)}
-                      className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
-                    >
-                      <option value="pump">Industrial Water Pump</option>
-                      <option value="temp_sensor">Ambient Weather/Temp Sensor</option>
-                      <option value="pressure_sensor">High-Pressure Pipeline Gauge</option>
-                      <option value="power_meter">Smart Electricity Grid Meter</option>
-                      <option value="smart_lock">Domestic Smart Door Lock</option>
-                      <option value="motion_sensor">Home Security Motion Sensor</option>
-                      <option value="smart_switch">Smart Relay Power Switch</option>
-                    </select>
+                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Tenant Domain ID (Partition Key)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. acme-industrial"
+                      value={superadminTenantId}
+                      onChange={(e) => setSuperadminTenantId(e.target.value)}
+                      className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    />
                   </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Tenant Admin Email</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="admin@acme.com"
+                      value={superadminEmail}
+                      onChange={(e) => setSuperadminEmail(e.target.value)}
+                      className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Initial Admin Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••••••"
+                      value={superadminPassword}
+                      onChange={(e) => setSuperadminPassword(e.target.value)}
+                      className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold uppercase tracking-wider shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 mt-4"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    Onboard Tenant Account
+                  </button>
+                </form>
+              </div>
+
+              {/* Right: Active Tenants List */}
+              <div className="lg:col-span-7 bg-[#0f172a]/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800/80">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Registered Tenant Accounts</h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Active multi-tenant partitions provisioned in DynamoDB.</p>
+                  </div>
+                  <button
+                    onClick={fetchTenants}
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 font-bold text-xs flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh List
+                  </button>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isProvisioning || tenants.length === 0}
-                  className="w-full py-3.5 rounded-xl font-bold uppercase tracking-wider mt-4 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/10 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <Database className="h-4 w-4" />
-                  Directly Provision Device
-                </button>
-              </form>
+                {loadingTenants ? (
+                  <div className="p-12 text-center text-slate-500 font-mono text-xs">
+                    Fetching tenant list...
+                  </div>
+                ) : tenants.length === 0 ? (
+                  <div className="border border-dashed border-slate-800/80 rounded-xl p-12 text-center text-slate-600 font-mono text-xs">
+                    No active tenants onboarded yet.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {tenants.map(t => (
+                      <div key={t.tenantId} className="bg-[#090e1a] border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">{t.companyName}</span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold border border-emerald-500/30">
+                              ACTIVE
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-cyan-400 font-mono mb-1">Partition: TENANT#{t.tenantId}</p>
+                          <p className="text-[10px] text-slate-500 font-mono">Admin: {t.adminEmail}</p>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setActiveTab('tenant_profiles');
+                            fetchTenantDevices(t.tenantId);
+                          }}
+                          className="mt-4 w-full py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors"
+                        >
+                          Inspect Registered Devices <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
+          )}
 
-          </div>
-        )}
-
-        {/* Tab 4: Tenant Profiles & Device Management */}
-        {activeTab === 'tenant_profiles' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-[fadeIn_0.2s_ease-out]">
-            
-            {/* Left Column: Tenant Selection & Details */}
-            <div className="lg:col-span-4 space-y-6">
+          {/* TAB 3: DIRECT DEVICE PROVISIONING */}
+          {activeTab === 'direct_provision' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-mono text-xs">
               
-              {/* Select Tenant Card */}
-              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl">
-                <h3 className="text-sm font-semibold orbitron text-white mb-1 uppercase tracking-wide flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-indigo-400" />
-                  Select Tenant Context
-                </h3>
-                <p className="text-[10px] text-slate-500 font-mono mb-4">View device profile registry and execute remote credentials reset or removal.</p>
+              {/* Left: Provisioning Controls & Credentials Download */}
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                
+                <div className="bg-[#0f172a]/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl">
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/80">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0">
+                      <PlusCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide">Direct Device Provisioning</h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Provision X.509 certificates & Thing slots directly.</p>
+                    </div>
+                  </div>
 
-                <div className="space-y-4">
+                  {directError && (
+                    <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                      <span>{directError}</span>
+                    </div>
+                  )}
+
+                  {directSuccess && (
+                    <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                      <span>{directSuccess}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleDirectProvision} className="space-y-4">
+                    <div>
+                      <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Target Tenant Partition</label>
+                      {loadingTenants ? (
+                        <div className="text-slate-500 text-xs">Loading tenants list...</div>
+                      ) : tenants.length === 0 ? (
+                        <div className="text-rose-400 text-xs">No onboarded tenants available. Please onboard a tenant first.</div>
+                      ) : (
+                        <select
+                          value={selectedTenantId}
+                          onChange={(e) => setSelectedTenantId(e.target.value)}
+                          className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                        >
+                          {tenants.map(t => (
+                            <option key={t.tenantId} value={t.tenantId}>
+                              {t.companyName} ({t.tenantId})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Unique Device ID / Thing Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. SMART-LOCK-101"
+                        value={directDeviceId}
+                        onChange={(e) => setDirectDeviceId(e.target.value)}
+                        className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Device Profile Type (Free-Text / Custom)</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Locking System, Solar Inverter, Pump..."
+                        value={directDeviceType}
+                        onChange={(e) => setDirectDeviceType(e.target.value)}
+                        className="w-full bg-[#090d16] border border-slate-800 rounded-xl p-3.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold mb-2"
+                      />
+                      <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
+                        <span className="text-slate-500 self-center">Presets:</span>
+                        {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setDirectDeviceType(preset)}
+                            className={`px-2 py-0.5 rounded border transition-all ${
+                              directDeviceType === preset
+                                ? 'bg-indigo-600 border-indigo-400 text-white font-bold'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isProvisioning || tenants.length === 0}
+                      className="w-full py-3.5 rounded-xl font-bold uppercase tracking-wider mt-4 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Database className="h-4 w-4" />
+                      Directly Provision Device
+                    </button>
+                  </form>
+                </div>
+
+                {/* Download Credentials Panel */}
+                {credentials && (
+                  <div className="bg-[#0b1626] border border-cyan-500/30 rounded-2xl p-5 shadow-xl animate-[fadeIn_0.5s_ease-out]">
+                    <h3 className="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-2 uppercase tracking-wide">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                      mTLS Credentials Established
+                    </h3>
+                    <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
+                      Cryptographic certificates established in AWS IoT Core registry. Download files to flash onto ESP32 simulator client.
+                    </p>
+
+                    <div className="flex flex-col gap-2 font-mono text-xs">
+                      <button
+                        onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
+                        className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-xl flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Download className="h-4 w-4" /> Download Certificate
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-normal">device.pem.crt</span>
+                      </button>
+
+                      <button
+                        onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
+                        className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-xl flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Download className="h-4 w-4" /> Download Private Key
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
+                      </button>
+
+                      {credentials.rootCaPem && (
+                        <button
+                          onClick={() => downloadCredentialFile(credentials.rootCaPem!, `AmazonRootCA1.pem`)}
+                          className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-xl flex items-center justify-between transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="h-4 w-4" /> Download Root CA
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-normal">AmazonRootCA1.pem</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Right: AWS SDK Execution Logs */}
+              <div className="lg:col-span-7 bg-[#0a0f1d] border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col h-[520px] font-mono">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                  <Terminal className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-xs font-bold orbitron text-white uppercase tracking-wider">AWS SDK Ingestion Execution Terminal</h3>
+                </div>
+                <div className="flex-1 bg-black/80 rounded-xl p-4 text-[10px] overflow-y-auto border border-slate-900 space-y-2">
+                  {provLogs.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-slate-600 italic">
+                      &gt;&gt; CONSOLE READY. SUBMIT PROVISIONING FORM &lt;&lt;
+                    </div>
+                  ) : (
+                    provLogs.map((log, idx) => {
+                      let color = 'text-slate-400';
+                      if (log.includes('[ERROR]')) color = 'text-rose-400 font-bold';
+                      if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
+                      if (log.includes('[AWS')) color = 'text-cyan-400';
+                      return <div key={idx} className={`${color} border-l border-slate-800 pl-2`}>{log}</div>;
+                    })
+                  )}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 4: TENANT PROFILES & DEVICE REGISTRY */}
+          {activeTab === 'tenant_profiles' && (
+            <div className="space-y-6 font-mono text-xs">
+              
+              <div className="bg-[#0f172a]/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div className="flex flex-wrap gap-4 items-center justify-between mb-6 pb-4 border-b border-slate-800/80">
                   <div>
-                    <label className="block text-slate-400 text-[10px] font-mono font-bold mb-1.5 uppercase">Tenant Business Account</label>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Tenant Devices Registry & Credentials Manager</h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Inspect registered devices, reset mTLS credentials, or revoke device access.</p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <label className="text-slate-400 text-xs font-bold uppercase">Select Tenant:</label>
                     <select
                       value={selectedProfileTenantId}
-                      onChange={(e) => {
-                        setSelectedProfileTenantId(e.target.value);
-                        fetchTenantDevices(e.target.value);
-                      }}
-                      className="w-full bg-[#0b0f19] border border-[#334155] rounded-xl p-3.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer font-mono font-semibold"
+                      onChange={(e) => fetchTenantDevices(e.target.value)}
+                      className="bg-[#090d16] border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 font-bold"
                     >
-                      <option value="">-- Choose Tenant --</option>
+                      <option value="">-- Choose Tenant Domain --</option>
                       {tenants.map(t => (
                         <option key={t.tenantId} value={t.tenantId}>
                           {t.companyName} ({t.tenantId})
@@ -1082,149 +1184,76 @@ export default function App() {
                     </select>
                   </div>
                 </div>
-              </div>
-
-              {/* Selected Tenant Info */}
-              {selectedProfileTenantId && (() => {
-                const currentTenant = tenants.find(t => t.tenantId === selectedProfileTenantId);
-                if (!currentTenant) return null;
-                return (
-                  <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 shadow-xl font-mono text-[10px] text-slate-400 space-y-2.5">
-                    <h4 className="text-[11px] font-bold text-slate-200 uppercase tracking-wide border-b border-[#1e293b] pb-1.5">Tenant Profile Details</h4>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Company Name:</span>
-                      <span className="text-slate-300 font-bold">{currentTenant.companyName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Tenant ID Slug:</span>
-                      <span className="text-slate-300 font-bold text-indigo-400">{currentTenant.tenantId}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Administrator:</span>
-                      <span className="text-slate-300 font-bold select-all">{currentTenant.adminEmail}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Reset Logs Console */}
-              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 flex flex-col h-[200px] shadow-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <Terminal className="w-4 h-4 text-indigo-400" />
-                  <h3 className="text-[10px] font-bold orbitron text-white uppercase tracking-wider">AWS / DB Event Logs</h3>
-                </div>
-                <div className="flex-1 bg-black/60 rounded-lg p-3.5 font-mono text-[9px] overflow-y-auto border border-slate-900 flex flex-col gap-1.5">
-                  {provLogs.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-slate-700">
-                      &gt;&gt; MONITOR READY &lt;&lt;
-                    </div>
-                  ) : (
-                    provLogs.map((log, idx) => {
-                      let color = 'text-slate-400';
-                      if (log.includes('[ERROR]')) color = 'text-rose-500 font-bold';
-                      if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
-                      if (log.includes('[AWS]')) color = 'text-indigo-400';
-                      return <div key={idx} className={`${color} border-l border-slate-850 pl-2`}>{log}</div>;
-                    })
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column: Device Registry List */}
-            <div className="lg:col-span-8 space-y-6">
-              
-              {/* Devices Card */}
-              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl space-y-4">
-                <div className="flex justify-between items-center border-b border-[#1e293b] pb-4">
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Device Registry Matrix</h3>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">Active client hardware tokens and cryptographic configurations under this partition key.</p>
-                  </div>
-                  {selectedProfileTenantId && (
-                    <button 
-                      onClick={() => fetchTenantDevices(selectedProfileTenantId)}
-                      disabled={loadingTenantDevices}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 border border-[#1e293b] text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-all font-mono"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${loadingTenantDevices ? 'animate-spin' : ''}`} />
-                      Refresh Registry
-                    </button>
-                  )}
-                </div>
 
                 {deviceResetSuccess && (
-                  <div className="bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] p-3 rounded-lg font-mono">
-                    ✅ {deviceResetSuccess}
+                  <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>{deviceResetSuccess}</span>
                   </div>
                 )}
+
                 {deviceResetError && (
-                  <div className="bg-rose-950/40 border border-rose-500/20 text-rose-400 text-[10px] p-3 rounded-lg font-mono">
-                    ❌ {deviceResetError}
+                  <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                    <span>{deviceResetError}</span>
                   </div>
                 )}
+
                 {deviceDeleteSuccess && (
-                  <div className="bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] p-3 rounded-lg font-mono">
-                    🗑️ {deviceDeleteSuccess}
+                  <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>{deviceDeleteSuccess}</span>
                   </div>
                 )}
+
                 {deviceDeleteError && (
-                  <div className="bg-rose-950/40 border border-rose-500/20 text-rose-400 text-[10px] p-3 rounded-lg font-mono">
-                    ❌ {deviceDeleteError}
+                  <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3.5 rounded-xl mb-4 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                    <span>{deviceDeleteError}</span>
                   </div>
                 )}
 
                 {!selectedProfileTenantId ? (
-                  <div className="text-center py-12 border border-dashed border-[#1e293b] rounded-xl bg-slate-950/10">
-                    <Building2 className="w-10 h-10 text-slate-700 mx-auto mb-2" />
-                    <p className="text-xs font-mono text-slate-500">Select a tenant on the left to inspect and manage devices.</p>
+                  <div className="border border-dashed border-slate-800/80 rounded-xl p-12 text-center text-slate-600 text-xs italic">
+                    Select a Tenant Domain above to inspect registered devices and manage credentials.
                   </div>
                 ) : loadingTenantDevices ? (
-                  <div className="text-center py-12 font-mono text-xs text-slate-500">
-                    Querying DynamoDB partition registry...
+                  <div className="p-12 text-center text-slate-500 text-xs">
+                    Querying DynamoDB for registered things under TENANT#{selectedProfileTenantId}...
                   </div>
                 ) : tenantDevices.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-[#1e293b] rounded-xl bg-slate-950/10 font-mono text-xs text-slate-500">
-                    No devices registered under this tenant.
+                  <div className="border border-dashed border-slate-800/80 rounded-xl p-12 text-center text-slate-600 text-xs">
+                    No registered devices found for tenant <strong className="text-slate-400">{selectedProfileTenantId}</strong>.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left font-mono text-xs border-collapse">
+                    <table className="w-full text-left font-mono text-xs">
                       <thead>
-                        <tr className="border-b border-[#1e293b] text-slate-500 uppercase text-[9px] tracking-wider pb-2">
-                          <th className="pb-2 font-bold">Device ID</th>
-                          <th className="pb-2 font-bold">Hardware Classification</th>
-                          <th className="pb-2 font-bold">Created Date</th>
-                          <th className="pb-2 font-bold">AWS Certificate ARN</th>
-                          <th className="pb-2 font-bold text-right">Actions</th>
+                        <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-wider pb-3">
+                          <th className="pb-3 font-bold">Device ID / Thing Name</th>
+                          <th className="pb-3 font-bold">Hardware Classification</th>
+                          <th className="pb-3 font-bold">Provisioned Date</th>
+                          <th className="pb-3 font-bold text-right">Administrative Actions</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {tenantDevices.map(device => (
-                          <tr key={device.device_id} className="border-b border-slate-900/60 hover:bg-[#1e293b]/10 transition-all">
-                            <td className="py-3 text-slate-200 font-bold">{device.device_id}</td>
-                            <td className="py-3 text-slate-400 uppercase text-[10px] tracking-wider">{device.device_type}</td>
-                            <td className="py-3 text-slate-500">{new Date(device.created_at || Date.now()).toLocaleDateString()}</td>
-                            <td className="py-3 text-slate-500 text-[10px] select-all max-w-[150px] truncate" title={device.certArn}>
-                              {device.certArn ? `${device.certArn.substring(0, 15)}...${device.certArn.slice(-8)}` : 'None'}
-                            </td>
-                            <td className="py-3 text-right space-x-2">
+                      <tbody className="divide-y divide-slate-800/60">
+                        {tenantDevices.map(d => (
+                          <tr key={d.actual_device_id} className="hover:bg-slate-900/40 transition-colors">
+                            <td className="py-4 font-bold text-cyan-400">{d.actual_device_id}</td>
+                            <td className="py-4 text-slate-400 uppercase text-[10px]">{d.device_type}</td>
+                            <td className="py-4 text-slate-500">{new Date(d.created_at || Date.now()).toLocaleDateString()}</td>
+                            <td className="py-4 text-right flex items-center justify-end gap-2">
                               <button
-                                onClick={() => handleResetDeviceCredentials(selectedProfileTenantId, device.device_id)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all font-semibold"
-                                title="Re-Setup device keys"
+                                onClick={() => handleRegenerateCredentials(selectedProfileTenantId, d.actual_device_id)}
+                                className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-bold text-[10px] uppercase flex items-center gap-1 transition-all"
                               >
-                                <Settings className="h-3 w-3" />
-                                Re-Setup
+                                <RefreshCw className="w-3 h-3" /> Reset Credentials
                               </button>
                               <button
-                                onClick={() => handleDeleteDevice(selectedProfileTenantId, device.device_id)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-950/40 border border-rose-500/20 text-[10px] font-bold text-rose-400 hover:bg-rose-600 hover:text-white transition-all font-semibold"
-                                title="Delete device completely"
+                                onClick={() => handleDeleteDevice(selectedProfileTenantId, d.actual_device_id)}
+                                className="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-[10px] uppercase flex items-center gap-1 transition-all"
                               >
-                                <Trash2 className="h-3 w-3" />
-                                Delete
+                                <Trash2 className="w-3 h-3" /> Revoke Device
                               </button>
                             </td>
                           </tr>
@@ -1233,48 +1262,53 @@ export default function App() {
                     </table>
                   </div>
                 )}
+
+                {/* Regenerated Credentials Download Box */}
+                {resetCredentialsData && (
+                  <div className="mt-6 bg-[#0b1626] border border-cyan-500/40 rounded-2xl p-6 shadow-xl animate-[fadeIn_0.3s_ease-out]">
+                    <h3 className="text-xs font-bold text-cyan-400 mb-2 uppercase tracking-wide flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                      Regenerated Credentials Ready
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-4">
+                      New X.509 certificates and keys issued for device. Download the package below:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <button
+                        onClick={() => downloadCredentialFile(resetCredentialsData.certificatePem, `device_certificate.crt`)}
+                        className="bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-xl flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-1.5"><Download className="h-4 w-4" /> Download Certificate</span>
+                        <span className="text-[9px] text-slate-500 font-normal">.crt</span>
+                      </button>
+
+                      <button
+                        onClick={() => downloadCredentialFile(resetCredentialsData.privateKeyPem, `private_key.key`)}
+                        className="bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-xl flex items-center justify-between transition-all"
+                      >
+                        <span className="flex items-center gap-1.5"><Download className="h-4 w-4" /> Download Private Key</span>
+                        <span className="text-[9px] text-slate-500 font-normal">.key</span>
+                      </button>
+
+                      {resetCredentialsData.rootCaPem && (
+                        <button
+                          onClick={() => downloadCredentialFile(resetCredentialsData.rootCaPem!, `AmazonRootCA1.pem`)}
+                          className="bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-xl flex items-center justify-between transition-all"
+                        >
+                          <span className="flex items-center gap-1.5"><Download className="h-4 w-4" /> Download Root CA</span>
+                          <span className="text-[9px] text-slate-500 font-normal">.pem</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Reset Credentials Download Panel */}
-              {resetCredentialsData && (
-                <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-6 shadow-xl space-y-4">
-                  <div className="flex items-center gap-2 border-b border-[#1e293b] pb-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    <h3 className="text-sm font-semibold orbitron text-white uppercase tracking-wide">Credentials Download Packages</h3>
-                  </div>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    New cryptographic certificates successfully established in AWS IoT Core registry. Download files to flash onto ESP32 simulator client.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-[10px]">
-                    <button
-                      onClick={() => downloadCredentialFile(resetCredentialsData.certificatePem, `device_certificate.crt`)}
-                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Download className="h-4 w-4" /> Download Certificate
-                      </span>
-                      <span className="text-[9px] text-slate-500 font-normal">device.pem.crt</span>
-                    </button>
-
-                    <button
-                      onClick={() => downloadCredentialFile(resetCredentialsData.privateKeyPem, `private_key.key`)}
-                      className="w-full bg-[#102431] border border-cyan-500/30 text-cyan-400 hover:bg-[#122e3e] font-bold p-3 rounded-lg flex items-center justify-between transition-all"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Download className="h-4 w-4" /> Download Private Key
-                      </span>
-                      <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
             </div>
+          )}
 
-          </div>
-        )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

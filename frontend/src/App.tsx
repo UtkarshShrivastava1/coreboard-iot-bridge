@@ -1694,18 +1694,32 @@ export default function App() {
                           </div>
 
                           <div>
-                            <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Device Hardware Profile</label>
-                            <select
+                            <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Device Hardware Profile (Custom / Free-Text)</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Locking System, Solar Inverter, Pump..."
                               value={newDeviceType}
                               onChange={(e) => setNewDeviceType(e.target.value)}
-                              className="w-full bg-[#0d1321] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer font-bold text-cyan-400"
-                            >
-                              <option value="pump">Industrial Water Pump</option>
-                              <option value="temp_sensor">Ambient Temperature & Humidity Node</option>
-                              <option value="pressure_sensor">Pipeline Pressure Gauge</option>
-                              <option value="power_meter">Energy Power Smart Meter</option>
-                              <option value="custom_sensor">Custom Sensor Node (Generic Object)</option>
-                            </select>
+                              className="w-full bg-[#0d1321] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 font-bold text-cyan-400 mb-2"
+                            />
+                            <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
+                              <span className="text-slate-500 self-center">Presets:</span>
+                              {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() => setNewDeviceType(preset)}
+                                  className={`px-2 py-0.5 rounded border transition-all ${
+                                    newDeviceType === preset
+                                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
+                                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                                  }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
                           </div>
 
                           <button
