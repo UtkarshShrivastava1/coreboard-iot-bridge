@@ -1090,13 +1090,17 @@ app.get('/api/superadmin/tenants/:tenantId/devices', authenticateToken, requireR
       }
     }));
 
-    const devices = (response.Items || []).map(item => ({
-      device_id: item.timestamp.replace('METADATA#DEVICE#', ''),
-      device_type: item.device_type || 'unknown',
-      status: item.status || 'active',
-      created_at: item.created_at || Date.now(),
-      certArn: item.certArn || ''
-    }));
+    const devices = (response.Items || []).map(item => {
+      const devId = item.actual_device_id || (item.timestamp ? item.timestamp.replace('METADATA#DEVICE#', '') : 'unknown-device');
+      return {
+        device_id: devId,
+        actual_device_id: devId,
+        device_type: item.device_type || 'unknown',
+        status: item.status || 'active',
+        created_at: item.created_at || Date.now(),
+        certArn: item.certArn || ''
+      };
+    });
 
     res.json(devices);
   } catch (error) {
@@ -1287,12 +1291,16 @@ app.get('/api/tenants/:tenantId/devices', authenticateToken, async (req, res) =>
       }
     }));
 
-    const devices = response.Items.map(item => ({
-      device_id: item.actual_device_id,
-      device_type: item.device_type,
-      created_at: item.created_at,
-      status: item.status || 'inactive'
-    }));
+    const devices = (response.Items || []).map(item => {
+      const devId = item.actual_device_id || (item.timestamp ? item.timestamp.replace('METADATA#DEVICE#', '') : 'unknown-device');
+      return {
+        device_id: devId,
+        actual_device_id: devId,
+        device_type: item.device_type || 'unknown',
+        created_at: item.created_at || Date.now(),
+        status: item.status || 'inactive'
+      };
+    });
 
     res.json(devices);
   } catch (error) {

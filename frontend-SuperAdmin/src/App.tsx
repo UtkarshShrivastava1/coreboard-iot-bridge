@@ -1237,27 +1237,30 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60">
-                        {tenantDevices.map(d => (
-                          <tr key={d.actual_device_id} className="hover:bg-slate-900/40 transition-colors">
-                            <td className="py-4 font-bold text-cyan-400">{d.actual_device_id}</td>
-                            <td className="py-4 text-slate-400 uppercase text-[10px]">{d.device_type}</td>
-                            <td className="py-4 text-slate-500">{new Date(d.created_at || Date.now()).toLocaleDateString()}</td>
-                            <td className="py-4 text-right flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleRegenerateCredentials(selectedProfileTenantId, d.actual_device_id)}
-                                className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-bold text-[10px] uppercase flex items-center gap-1 transition-all"
-                              >
-                                <RefreshCw className="w-3 h-3" /> Reset Credentials
-                              </button>
-                              <button
-                                onClick={() => handleDeleteDevice(selectedProfileTenantId, d.actual_device_id)}
-                                className="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-[10px] uppercase flex items-center gap-1 transition-all"
-                              >
-                                <Trash2 className="w-3 h-3" /> Revoke Device
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {tenantDevices.map(d => {
+                          const devId = d.actual_device_id || d.device_id || d.id || 'N/A';
+                          return (
+                            <tr key={devId} className="hover:bg-slate-900/40 transition-colors">
+                              <td className="py-4 font-bold text-cyan-400">{devId}</td>
+                              <td className="py-4 text-slate-400 uppercase text-[10px]">{d.device_type}</td>
+                              <td className="py-4 text-slate-500">{new Date(d.created_at || Date.now()).toLocaleDateString()}</td>
+                              <td className="py-4 text-right flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleRegenerateCredentials(selectedProfileTenantId, devId)}
+                                  className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-300 font-bold text-[10px] uppercase flex items-center gap-1 transition-all"
+                                >
+                                  <RefreshCw className="w-3 h-3" /> Reset Credentials
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDevice(selectedProfileTenantId, devId)}
+                                  className="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-[10px] uppercase flex items-center gap-1 transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Revoke Device
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
