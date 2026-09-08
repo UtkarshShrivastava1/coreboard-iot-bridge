@@ -61,61 +61,6 @@ interface Alarm {
   cleared_at: number | null;
 }
 
-const DEVICE_JSON_TEMPLATES: Record<string, any> = {
-  pump: {
-    device_id: "DEVICE_ID",
-    device_type: "pump",
-    flow_rate: 25.4,
-    temperature: 32.5,
-    status: "optimal"
-  },
-  temp_sensor: {
-    device_id: "DEVICE_ID",
-    device_type: "temp_sensor",
-    temperature: 24.2,
-    humidity: 58.0,
-    status: "optimal"
-  },
-  pressure_sensor: {
-    device_id: "DEVICE_ID",
-    device_type: "pressure_sensor",
-    pressure: 4.2,
-    status: "optimal"
-  },
-  power_meter: {
-    device_id: "DEVICE_ID",
-    device_type: "power_meter",
-    voltage: 230.1,
-    current: 4.8,
-    power: 1.1,
-    status: "optimal"
-  },
-  smart_lock: {
-    device_id: "DEVICE_ID",
-    device_type: "smart_lock",
-    lock_state: true,
-    status: "optimal"
-  },
-  motion_sensor: {
-    device_id: "DEVICE_ID",
-    device_type: "motion_sensor",
-    motion_detected: false,
-    status: "optimal"
-  },
-  smart_switch: {
-    device_id: "DEVICE_ID",
-    device_type: "smart_switch",
-    switch_state: true,
-    status: "optimal"
-  },
-  custom_sensor: {
-    device_id: "DEVICE_ID",
-    device_type: "custom_sensor",
-    custom_metric: 100.0,
-    status: "optimal"
-  }
-};
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export default function App() {
@@ -2504,16 +2449,24 @@ export default function App() {
                 </div>
               </div>
 
-              {/* JSON Payload */}
+              {/* JSON Payload Specifications */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">JSON Body Payload</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Device-Agnostic JSON Payload (Sample)</h4>
+                    <span className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold text-[8px] uppercase tracking-wider">
+                      ⚡ Any Schema Accepted
+                    </span>
+                  </div>
                   <button
                     onClick={() => {
                       const payloadStr = JSON.stringify(
                         {
-                          ...DEVICE_JSON_TEMPLATES[selectedTemplateDevice.device_type] || DEVICE_JSON_TEMPLATES.custom_sensor,
-                          device_id: selectedTemplateDevice.device_id
+                          device_id: selectedTemplateDevice.device_id,
+                          s1: 25.4,
+                          temp_c: 32.5,
+                          batt_v: 3.8,
+                          status: "optimal"
                         },
                         null,
                         2
@@ -2530,18 +2483,26 @@ export default function App() {
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" /> Copy JSON
+                        <Copy className="w-3.5 h-3.5" /> Copy Sample JSON
                       </>
                     )}
                   </button>
                 </div>
 
+                {/* Agnosticism Banner */}
+                <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3 rounded-lg text-[10px] leading-relaxed">
+                  💡 <strong>Schema Flexibility Note:</strong> You do <strong>NOT</strong> have to follow a fixed payload structure! Your hardware can publish <strong>any custom JSON body with whatever key names</strong> (e.g. <code>{'{"s1": 42.5, "sensor_2": 18.1}'}</code>). The Gateway ingests all fields dynamically.
+                </div>
+
                 <div className="bg-black/60 border border-slate-900 rounded-lg p-4 max-h-[220px] overflow-y-auto">
-                  <pre className="text-slate-300 text-2xs leading-relaxed select-all">
+                  <pre className="text-emerald-400 text-2xs leading-relaxed select-all">
                     {JSON.stringify(
                       {
-                        ...DEVICE_JSON_TEMPLATES[selectedTemplateDevice.device_type] || DEVICE_JSON_TEMPLATES.custom_sensor,
-                        device_id: selectedTemplateDevice.device_id
+                        device_id: selectedTemplateDevice.device_id,
+                        s1: 25.4,
+                        temp_c: 32.5,
+                        batt_v: 3.8,
+                        status: "optimal"
                       },
                       null,
                       2
