@@ -1227,7 +1227,8 @@ app.post('/api/superadmin/tenants/:tenantId/devices/provision', authenticateToke
       credentials: {
         certificatePem: certPem,
         privateKeyPem: privateKeyPem,
-        certificateArn: certArn
+        certificateArn: certArn,
+        rootCaPem: caCert ? caCert.toString('utf-8') : ''
       }
     });
 
@@ -1363,7 +1364,8 @@ app.post(['/api/superadmin/tenants/:tenantId/devices/:deviceId/reset', '/api/sup
       credentials: {
         certificatePem: certPem,
         privateKeyPem: privateKeyPem,
-        certificateArn: certArn
+        certificateArn: certArn,
+        rootCaPem: caCert ? caCert.toString('utf-8') : ''
       }
     });
 
