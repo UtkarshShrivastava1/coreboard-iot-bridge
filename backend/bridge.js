@@ -684,6 +684,108 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// C. SuperAdmin Signup
+app.post('/api/superadmin/signup', async (req, res) => {
+  const { email, password, secretKey } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  const expectedSecret = process.env.SUPERADMIN_SIGNUP_SECRET || 'coreboard-superadmin-secret-key-2026';
+  if (secretKey !== expectedSecret) {
+    return res.status(401).json({ error: 'Invalid SuperAdmin Secret Key.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const userPK = 'TENANT#superadmin';
+  const userSK = `USER#${cleanEmail}`;
+
+  try {
+    const checkRes = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND #ts = :sk',
+      ExpressionAttributeNames: { '#ts': 'timestamp' },
+      ExpressionAttributeValues: { ':pk': userPK, ':sk': userSK }
+    }));
+
+    if (checkRes.Items && checkRes.Items.length > 0) {
+      return res.status(400).json({ error: 'SuperAdmin account already exists with this email.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const userItem = {
+      device_id: userPK,
+      timestamp: userSK,
+      company_name: 'Coreboard',
+      email: cleanEmail,
+      password_hash: passwordHash,
+      role: 'SUPERADMIN',
+      created_at: Date.now()
+    };
+
+    await ddbDocClient.send(new PutCommand({
+      TableName: DYNAMODB_TABLE,
+      Item: userItem
+    }));
+
+    console.log(`[SuperAdmin Auth] Registered SuperAdmin: ${cleanEmail}`);
+    res.status(201).json({ success: true, message: 'SuperAdmin registered successfully.' });
+  } catch (err) {
+    console.error('[SuperAdmin Signup Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// D. SuperAdmin Login
+app.post('/api/superadmin/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const userPK = 'TENANT#superadmin';
+  const userSK = `USER#${cleanEmail}`;
+
+  try {
+    const userRes = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND #ts = :sk',
+      ExpressionAttributeNames: { '#ts': 'timestamp' },
+      ExpressionAttributeValues: { ':pk': userPK, ':sk': userSK }
+    }));
+
+    if (!userRes.Items || userRes.Items.length === 0) {
+      return res.status(401).json({ error: 'Invalid SuperAdmin email or password.' });
+    }
+
+    const userItem = userRes.Items[0];
+    const passwordMatch = await bcrypt.compare(password, userItem.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid SuperAdmin email or password.' });
+    }
+
+    const token = jwt.sign(
+      { tenantId: 'superadmin', email: userItem.email, role: 'SUPERADMIN' },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    console.log(`[SuperAdmin Auth] SuperAdmin logged in: ${cleanEmail}`);
+    res.json({
+      success: true,
+      token,
+      superadmin: {
+        email: userItem.email,
+        role: 'SUPERADMIN'
+      }
+    });
+  } catch (err) {
+    console.error('[SuperAdmin Login Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 3. Programmatic Device Provisioning Endpoint (Secured)
 // 3. Request Device Setup Endpoint (Tenant Admins)
 app.post('/api/tenants/:tenantId/devices/request', authenticateToken, requireRole(['ADMIN', 'SUPERADMIN']), async (req, res) => {
@@ -959,6 +1061,69 @@ app.get('/api/superadmin/tenants', authenticateToken, requireRole(['SUPERADMIN']
   }
 });
 
+// 3d-2. Onboard New Tenant (Superadmin only)
+app.post('/api/superadmin/tenants/onboard', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
+  const { tenantId, companyName, email, password } = req.body;
+  if (!tenantId || !companyName || !email || !password) {
+    return res.status(400).json({ error: 'tenantId, companyName, email, and password are required.' });
+  }
+
+  const cleanTenantId = tenantId.trim().toLowerCase();
+  const cleanEmail = email.trim().toLowerCase();
+  const userPK = `TENANT#${cleanTenantId}`;
+  const userSK = `USER#${cleanEmail}`;
+
+  try {
+    const checkRes = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND #ts = :sk',
+      ExpressionAttributeNames: { '#ts': 'timestamp' },
+      ExpressionAttributeValues: { ':pk': userPK, ':sk': userSK }
+    }));
+
+    if (checkRes.Items && checkRes.Items.length > 0) {
+      return res.status(400).json({ error: 'Tenant admin already exists for this tenant ID.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const userItem = {
+      device_id: userPK,
+      timestamp: userSK,
+      company_name: companyName.trim(),
+      email: cleanEmail,
+      password_hash: passwordHash,
+      role: 'ADMIN',
+      created_at: Date.now()
+    };
+
+    const metadataItem = {
+      device_id: userPK,
+      timestamp: 'METADATA',
+      company_name: companyName.trim(),
+      tenant_id: cleanTenantId,
+      admin_email: cleanEmail,
+      created_at: Date.now(),
+      status: 'ACTIVE'
+    };
+
+    await ddbDocClient.send(new PutCommand({
+      TableName: DYNAMODB_TABLE,
+      Item: userItem
+    }));
+
+    await ddbDocClient.send(new PutCommand({
+      TableName: DYNAMODB_TABLE,
+      Item: metadataItem
+    }));
+
+    console.log(`[Superadmin] Onboarded new tenant: ${companyName} (${cleanTenantId}) with admin ${cleanEmail}`);
+    res.status(201).json({ success: true, message: `Tenant ${companyName} onboarded successfully.` });
+  } catch (err) {
+    console.error('[Onboard Tenant Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 3e. Direct Device Provisioning Without Request (Superadmin only)
 app.post('/api/superadmin/tenants/:tenantId/devices/provision', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
   const { tenantId } = req.params;
@@ -1110,7 +1275,7 @@ app.get('/api/superadmin/tenants/:tenantId/devices', authenticateToken, requireR
 });
 
 // 3g. Regenerate Device Credentials / Re-Setup (Superadmin only)
-app.post('/api/superadmin/tenants/:tenantId/devices/:deviceId/reset', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
+app.post(['/api/superadmin/tenants/:tenantId/devices/:deviceId/reset', '/api/superadmin/tenants/:tenantId/devices/:deviceId/regenerate-keys'], authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
   const { tenantId, deviceId } = req.params;
   const cleanTenantId = tenantId.trim().toLowerCase();
   const cleanDeviceId = deviceId.trim();
@@ -1629,8 +1794,44 @@ app.post('/api/tenants/:tenantId/alarms/:alarmId/clear', authenticateToken, asyn
   }
 });
 
+// Default SuperAdmin Account Auto-Seed
+async function seedDefaultSuperadmin() {
+  try {
+    const userPK = 'TENANT#superadmin';
+    const cleanEmail = 'superadmin@coreboard.io';
+    const userSK = `USER#${cleanEmail}`;
+    const checkRes = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND #ts = :sk',
+      ExpressionAttributeNames: { '#ts': 'timestamp' },
+      ExpressionAttributeValues: { ':pk': userPK, ':sk': userSK }
+    }));
+
+    if (!checkRes.Items || checkRes.Items.length === 0) {
+      const defaultPassword = process.env.DEFAULT_SUPERADMIN_PASSWORD || 'superadmin123';
+      const passwordHash = await bcrypt.hash(defaultPassword, 10);
+      await ddbDocClient.send(new PutCommand({
+        TableName: DYNAMODB_TABLE,
+        Item: {
+          device_id: userPK,
+          timestamp: userSK,
+          company_name: 'Coreboard',
+          email: cleanEmail,
+          password_hash: passwordHash,
+          role: 'SUPERADMIN',
+          created_at: Date.now()
+        }
+      }));
+      console.log(`[Seed] Initialized default SuperAdmin account: ${cleanEmail}`);
+    }
+  } catch (err) {
+    console.warn('[Seed] Note: SuperAdmin auto-seed skipped or deferred:', err.message);
+  }
+}
+
 server.listen(PORT, () => {
   console.log(`[Bridge Server] Running and listening on http://localhost:${PORT}`);
+  seedDefaultSuperadmin();
 });
 
 
