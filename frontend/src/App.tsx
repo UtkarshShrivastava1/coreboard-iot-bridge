@@ -4,10 +4,20 @@ import {
   Activity, ShieldAlert, Cpu, LogOut, Building2, User, Mail, 
   Lock, Radio, RefreshCw, Terminal, 
   Menu, X, CheckCircle2, AlertTriangle, Thermometer, Droplets, Gauge, Zap, Bell,
-  Code, Copy, Check
+  Code, Copy, Check, Sliders, Play, Pause, Plus, Trash2
 } from 'lucide-react';
 
 // Interfaces
+interface WidgetMappingConfig {
+  keyName: string;
+  widgetType: 'gauge' | 'stat' | 'chart' | 'status';
+  customLabel: string;
+  unit: string;
+  minVal: number;
+  maxVal: number;
+  warnThreshold?: number;
+}
+
 interface Device {
   device_id: string;
   device_type: string;
@@ -172,6 +182,110 @@ export default function App() {
 
   // Alarm Filters
   const [alarmFilter, setAlarmFilter] = useState<'ALL' | 'ACTIVE_ACK' | 'CLEARED'>('ACTIVE_ACK');
+
+  // Device-Agnostic Schema Auto-Discovery State
+  const [discoveredKeysMap, setDiscoveredKeysMap] = useState<Record<string, string[]>>({});
+  
+  // Widget Mappings State (Persisted per device in localStorage)
+  const [widgetMappingsMap, setWidgetMappingsMap] = useState<Record<string, WidgetMappingConfig[]>>(() => {
+    const saved = localStorage.getItem('coreboard_widget_mappings');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Live JSON Payload Inspector Drawer State
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [inspectorPaused, setInspectorPaused] = useState(false);
+  const [latestRawPayload, setLatestRawPayload] = useState<any | null>(null);
+  const [payloadStats, setPayloadStats] = useState({ count: 0, totalBytes: 0, lastMsgTime: Date.now() });
+
+  // Widget Mapping Studio Modal State
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
+  const [studioDeviceId, setStudioDeviceId] = useState('');
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newWidgetType, setNewWidgetType] = useState<'gauge' | 'stat' | 'chart' | 'status'>('gauge');
+  const [newCustomLabel, setNewCustomLabel] = useState('');
+  const [newUnit, setNewUnit] = useState('');
+  const [newMinVal, setNewMinVal] = useState<number>(0);
+  const [newMaxVal, setNewMaxVal] = useState<number>(100);
+  const [newWarnThreshold, setNewWarnThreshold] = useState<number>(80);
+
+  // Freeform Custom JSON Simulator State
+  const [simMode, setSimMode] = useState<'preset' | 'freeform'>('freeform');
+  const [freeformJsonInput, setFreeformJsonInput] = useState<string>(
+    JSON.stringify({ s1: 42.5, temp_c: 31.8, pressure_bar: 5.4, batt_v: 3.8, alert_flag: false }, null, 2)
+  );
+
+  // Key Auto-Discovery Extractor
+  const extractPayloadKeys = (devId: string, payload: Record<string, any>) => {
+    if (!devId || !payload) return;
+    const sysKeys = new Set(['device_id', 'device_type', 'tenant_id', 'timestamp', 'status', 'actual_device_id']);
+    const keys = Object.keys(payload).filter(k => !sysKeys.has(k));
+    
+    setDiscoveredKeysMap(prev => {
+      const existing = new Set(prev[devId] || []);
+      let updated = false;
+      keys.forEach(k => {
+        if (!existing.has(k)) {
+          existing.add(k);
+          updated = true;
+        }
+      });
+      return updated ? { ...prev, [devId]: Array.from(existing) } : prev;
+    });
+  };
+
+  // Save Widget Mapping
+  const handleSaveWidgetMapping = (devId: string) => {
+    if (!newKeyName) {
+      showNotification('error', 'Select or enter a JSON key name first.');
+      return;
+    }
+    const config: WidgetMappingConfig = {
+      keyName: newKeyName,
+      widgetType: newWidgetType,
+      customLabel: newCustomLabel || newKeyName,
+      unit: newUnit,
+      minVal: Number(newMinVal),
+      maxVal: Number(newMaxVal),
+      warnThreshold: Number(newWarnThreshold)
+    };
+
+    setWidgetMappingsMap(prev => {
+      const existing = prev[devId] || [];
+      const filtered = existing.filter(m => m.keyName !== newKeyName);
+      const updated = { ...prev, [devId]: [...filtered, config] };
+      localStorage.setItem('coreboard_widget_mappings', JSON.stringify(updated));
+      return updated;
+    });
+
+    showNotification('success', `Mapped key "${newKeyName}" as ${newWidgetType.toUpperCase()} widget!`);
+    setNewKeyName('');
+    setNewCustomLabel('');
+    setNewUnit('');
+  };
+
+  // Remove Widget Mapping
+  const handleRemoveWidgetMapping = (devId: string, keyName: string) => {
+    setWidgetMappingsMap(prev => {
+      const existing = prev[devId] || [];
+      const updated = { ...prev, [devId]: existing.filter(m => m.keyName !== keyName) };
+      localStorage.setItem('coreboard_widget_mappings', JSON.stringify(updated));
+      return updated;
+    });
+    showNotification('success', `Removed widget mapping for "${keyName}".`);
+  };
+
+  // Open Studio for device
+  const openStudioForDevice = (devId: string) => {
+    setStudioDeviceId(devId);
+    const discovered = discoveredKeysMap[devId] || [];
+    if (discovered.length > 0) {
+      setNewKeyName(discovered[0]);
+    } else {
+      setNewKeyName('');
+    }
+    setIsStudioOpen(true);
+  };
 
   // General Notification state
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
@@ -444,6 +558,10 @@ export default function App() {
       // Telemetry Stream Listener
       socket.on('telemetry', (data: TelemetryPayload) => {
         if (data.tenant_id === tenant.tenantId) {
+          // Trigger Schema Auto-Discovery Engine
+          extractPayloadKeys(data.device_id, data);
+
+          // Update Live Telemetry & Device Online Status
           setLiveTelemetry(prev => ({
             ...prev,
             [data.device_id]: data
@@ -452,6 +570,17 @@ export default function App() {
             ...prev,
             [data.device_id]: true
           }));
+
+          // Live Inspector Payload Stream Stats
+          const payloadStr = JSON.stringify(data);
+          const bytes = new Blob([payloadStr]).size;
+          setPayloadStats(prev => ({
+            count: prev.count + 1,
+            totalBytes: prev.totalBytes + bytes,
+            lastMsgTime: Date.now()
+          }));
+
+          setLatestRawPayload((prev: any) => inspectorPaused ? prev : data);
 
           const currentTime = new Date().toLocaleTimeString();
           
@@ -559,13 +688,22 @@ export default function App() {
     const selectedDevice = devices.find(d => d.device_id === simDeviceId);
     const type = selectedDevice ? selectedDevice.device_type : 'custom';
 
-    // Build payload according to type
-    const payload: Record<string, any> = {
+    // Build payload according to simMode
+    let payload: Record<string, any> = {
       device_type: type,
       status: simStatus
     };
 
-    if (type === 'pump') {
+    if (simMode === 'freeform') {
+      try {
+        const parsed = JSON.parse(freeformJsonInput);
+        payload = { ...payload, ...parsed };
+      } catch (err: any) {
+        showNotification('error', `Invalid JSON Syntax: ${err.message}`);
+        setIsSimulating(false);
+        return;
+      }
+    } else if (type === 'pump') {
       payload.flow_rate = parseFloat(simFields.flow_rate.toFixed(1));
       payload.temperature = parseFloat(simFields.temperature.toFixed(1));
     } else if (type === 'temp_sensor') {
@@ -1065,8 +1203,21 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Status */}
-              <div className="flex items-center gap-4 text-xs font-mono">
+              {/* Status & Inspector Controls */}
+              <div className="flex items-center gap-3 text-xs font-mono">
+                <button
+                  onClick={() => setInspectorOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 font-bold text-[10px] uppercase flex items-center gap-1.5 transition-all shadow-lg shadow-cyan-950/40"
+                >
+                  <Code className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>JSON Inspector</span>
+                  {payloadStats.count > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-cyan-500 text-black text-[9px] font-bold">
+                      {payloadStats.count}
+                    </span>
+                  )}
+                </button>
+
                 <div className="flex items-center gap-2">
                   {isConnected ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold uppercase">
@@ -1080,7 +1231,7 @@ export default function App() {
                     </span>
                   )}
                 </div>
-                <div className="text-slate-400 text-xs select-none">
+                <div className="text-slate-400 text-xs select-none hidden sm:block">
                   {tenant.email}
                 </div>
               </div>
@@ -1174,6 +1325,13 @@ export default function App() {
                                 </div>
 
                                 <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => openStudioForDevice(d.device_id)}
+                                    title="Configure Widget Studio & Data Mapping"
+                                    className="p-1 rounded-lg bg-slate-900 hover:bg-cyan-950/60 border border-slate-800 hover:border-cyan-500/40 text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-[9px] font-mono px-1.5 font-bold"
+                                  >
+                                    <Sliders className="w-3 h-3 text-cyan-400" /> Studio
+                                  </button>
                                   {deviceAlarms.length > 0 && (
                                     <span className="px-2 py-0.5 rounded-full bg-rose-600/10 border border-rose-500/20 text-rose-400 text-[8px] font-mono font-bold animate-pulse">
                                       {deviceAlarms.length} ALARM
@@ -1424,17 +1582,26 @@ export default function App() {
                                 </p>
                               </div>
 
-                              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono uppercase border ${
-                                deviceAlarms.length > 0
-                                  ? deviceAlarms.some(a => a.severity === 'CRITICAL')
-                                    ? 'bg-rose-950/50 border-rose-500/30 text-rose-400'
-                                    : 'bg-amber-950/50 border-amber-500/30 text-amber-400'
-                                  : 'bg-emerald-950/40 border-emerald-500/20 text-emerald-400'
-                              }`}>
-                                {deviceAlarms.length > 0 
-                                  ? `${deviceAlarms.length} ACTIVE ALARM${deviceAlarms.length > 1 ? 'S' : ''}` 
-                                  : telemetry ? (telemetry.status || 'OPTIMAL').toUpperCase() : 'NO DATA RECEIVED'}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => openStudioForDevice(activeDevice.device_id)}
+                                  className="px-3 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 font-bold font-mono text-[10px] uppercase flex items-center gap-1.5 transition-all shadow-lg shadow-cyan-950/40"
+                                >
+                                  <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span>Widget Studio</span>
+                                </button>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono uppercase border ${
+                                  deviceAlarms.length > 0
+                                    ? deviceAlarms.some(a => a.severity === 'CRITICAL')
+                                      ? 'bg-rose-950/50 border-rose-500/30 text-rose-400'
+                                      : 'bg-amber-950/50 border-amber-500/30 text-amber-400'
+                                    : 'bg-emerald-950/40 border-emerald-500/20 text-emerald-400'
+                                }`}>
+                                  {deviceAlarms.length > 0 
+                                    ? `${deviceAlarms.length} ACTIVE ALARM${deviceAlarms.length > 1 ? 'S' : ''}` 
+                                    : telemetry ? (telemetry.status || 'OPTIMAL').toUpperCase() : 'NO DATA RECEIVED'}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Alarms Detail banner if device has active alarms */}
@@ -2032,6 +2199,32 @@ export default function App() {
                     </div>
                   ) : (
                     <form onSubmit={handleSimulateTelemetry} className="space-y-6 font-mono text-xs mt-4">
+                      {/* Mode Switcher */}
+                      <div className="flex bg-[#080d1a] p-1 rounded-xl border border-slate-800 mb-2">
+                        <button
+                          type="button"
+                          onClick={() => setSimMode('freeform')}
+                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                            simMode === 'freeform'
+                              ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <Code className="w-3.5 h-3.5" /> Freeform Custom JSON Payload
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSimMode('preset')}
+                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                            simMode === 'preset'
+                              ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <Radio className="w-3.5 h-3.5" /> Preset Metric Controls
+                        </button>
+                      </div>
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">1. Select Target Device</label>
@@ -2062,10 +2255,43 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Configurable telemetry inputs */}
-                      {(() => {
-                        const targetDevice = devices.find(d => d.device_id === simDeviceId) || devices[0];
-                        const type = targetDevice.device_type;
+                      {/* Freeform JSON Mode */}
+                      {simMode === 'freeform' ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-slate-400 font-bold uppercase tracking-wide">3. Freeform Device-Agnostic JSON Body</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFreeformJsonInput(JSON.stringify({ s1: 45.2, temp_c: 32.1, pressure_bar: 4.8, alert: false }, null, 2))}
+                                className="text-[9px] text-cyan-400 hover:text-white px-2 py-0.5 rounded bg-slate-900 border border-slate-800"
+                              >
+                                Preset A
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFreeformJsonInput(JSON.stringify({ voltage_v: 231.4, current_a: 8.5, power_kw: 1.96, state: "RUNNING" }, null, 2))}
+                                className="text-[9px] text-cyan-400 hover:text-white px-2 py-0.5 rounded bg-slate-900 border border-slate-800"
+                              >
+                                Preset B
+                              </button>
+                            </div>
+                          </div>
+                          <textarea
+                            rows={7}
+                            value={freeformJsonInput}
+                            onChange={(e) => setFreeformJsonInput(e.target.value)}
+                            className="w-full bg-black/80 border border-slate-800 rounded-xl p-4 text-emerald-400 font-mono text-xs focus:outline-none focus:border-cyan-500"
+                            placeholder="Enter any valid JSON body..."
+                          />
+                          <p className="text-[10px] text-slate-500 italic">
+                            💡 Send any JSON payload to test key auto-discovery and visual widget mapping live!
+                          </p>
+                        </div>
+                      ) : (
+                        (() => {
+                          const targetDevice = devices.find(d => d.device_id === simDeviceId) || devices[0];
+                          const type = targetDevice ? targetDevice.device_type : 'pump';
                         
                         return (
                           <div className="bg-[#10192e]/40 border border-slate-850 p-5 rounded-xl space-y-4">
@@ -2169,7 +2395,7 @@ export default function App() {
 
                           </div>
                         );
-                      })()}
+                      })())}
 
                       <button
                         type="submit"
@@ -2338,6 +2564,321 @@ export default function App() {
                 className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[11px] font-bold"
               >
                 Close Specifications
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Dynamic Widget & Field Mapping Studio */}
+      {isStudioOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#0c1222] border border-cyan-500/30 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
+            
+            {/* Studio Header */}
+            <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-cyan-400" />
+                  Dynamic Widget & Field Mapping Studio
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Configure custom visual gauges and data bindings for Thing: <span className="text-cyan-400 font-bold">{studioDeviceId}</span>
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsStudioOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Studio Content */}
+            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              
+              {/* Add Mapping Rule Form */}
+              <div className="bg-[#080d19] border border-slate-800/90 rounded-xl p-4 space-y-4">
+                <h4 className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> Bind JSON Field to Visual Widget
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Target JSON Key Name</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-bold"
+                      >
+                        <option value="">-- Discovered Key Fields --</option>
+                        {(discoveredKeysMap[studioDeviceId] || []).map(k => (
+                          <option key={k} value={k}>{k}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Or type key..."
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-bold"
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-500 mt-1">Select from auto-discovered payload keys or type exact field name.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Widget Display Type</label>
+                    <select
+                      value={newWidgetType}
+                      onChange={(e) => setNewWidgetType(e.target.value as any)}
+                      className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-bold"
+                    >
+                      <option value="gauge">Radial Gauge Meter (0-100% Bar)</option>
+                      <option value="stat">Numeric Stat Card (Big Value)</option>
+                      <option value="chart">Time-Series Line Graph</option>
+                      <option value="status">Status / Boolean Indicator</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Custom Display Label</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Boiler 1 Temp"
+                      value={newCustomLabel}
+                      onChange={(e) => setNewCustomLabel(e.target.value)}
+                      className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Unit Suffix</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. °C, PSI, L/min, V"
+                      value={newUnit}
+                      onChange={(e) => setNewUnit(e.target.value)}
+                      className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Warning Threshold</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 80"
+                      value={newWarnThreshold}
+                      onChange={(e) => setNewWarnThreshold(Number(e.target.value))}
+                      className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2 text-xs text-rose-300 focus:outline-none focus:border-rose-500 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Scale Min Range</label>
+                    <input
+                      type="number"
+                      value={newMinVal}
+                      onChange={(e) => setNewMinVal(Number(e.target.value))}
+                      className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Scale Max Range</label>
+                    <input
+                      type="number"
+                      value={newMaxVal}
+                      onChange={(e) => setNewMaxVal(Number(e.target.value))}
+                      className="w-full bg-[#0d1527] border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleSaveWidgetMapping(studioDeviceId)}
+                  className="w-full py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
+                >
+                  <Check className="w-4 h-4" /> Save Widget Binding Rule
+                </button>
+              </div>
+
+              {/* Active Mapped Widgets List */}
+              <div>
+                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-3">Active Mapped Widgets for {studioDeviceId}</h4>
+                {(!widgetMappingsMap[studioDeviceId] || widgetMappingsMap[studioDeviceId].length === 0) ? (
+                  <div className="p-6 border border-dashed border-slate-800 rounded-xl text-center text-slate-500 italic text-[11px]">
+                    No custom widget mappings established yet. Discovered payload fields will render using default smart cards.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {widgetMappingsMap[studioDeviceId].map((m) => (
+                      <div key={m.keyName} className="bg-[#080d19] border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-1 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-bold uppercase text-[9px]">
+                            {m.widgetType}
+                          </span>
+                          <div>
+                            <span className="text-xs font-bold text-slate-200">{m.customLabel}</span>
+                            <span className="text-[10px] text-slate-500 ml-2 font-mono">(Key: <code className="text-cyan-400">{m.keyName}</code> | Unit: {m.unit || 'N/A'})</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveWidgetMapping(studioDeviceId, m.keyName)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 transition-all"
+                          title="Remove Rule"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-900/40 px-6 py-3.5 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setIsStudioOpen(false)}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[11px] font-bold"
+              >
+                Done & Close Studio
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Drawer: Live Cyber JSON Payload Inspector */}
+      {inspectorOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out] flex justify-end">
+          <div className="bg-[#080d1a] border-l border-cyan-500/30 w-full max-w-xl h-full flex flex-col shadow-2xl font-mono text-xs">
+            
+            {/* Inspector Header */}
+            <div className="bg-[#0b1222] px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4 text-cyan-400 animate-pulse" />
+                <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide">Live Cyber JSON Inspector</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setInspectorPaused(!inspectorPaused)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1 border transition-all ${
+                    inspectorPaused ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                  }`}
+                >
+                  {inspectorPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                  {inspectorPaused ? 'Paused' : 'Streaming'}
+                </button>
+                <button 
+                  onClick={() => setInspectorOpen(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Inspector Content */}
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+              
+              {/* Stream Metrics Banner */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-[#0c1426] border border-slate-800 p-3 rounded-xl">
+                  <span className="text-[8px] text-slate-500 uppercase font-bold block">Messages Processed</span>
+                  <span className="text-sm font-bold orbitron text-cyan-400 mt-0.5 block">{payloadStats.count} msgs</span>
+                </div>
+                <div className="bg-[#0c1426] border border-slate-800 p-3 rounded-xl">
+                  <span className="text-[8px] text-slate-500 uppercase font-bold block">Telemetry Volume</span>
+                  <span className="text-sm font-bold orbitron text-emerald-400 mt-0.5 block">{(payloadStats.totalBytes / 1024).toFixed(1)} KB</span>
+                </div>
+                <div className="bg-[#0c1426] border border-slate-800 p-3 rounded-xl">
+                  <span className="text-[8px] text-slate-500 uppercase font-bold block">Gateway Endpoint</span>
+                  <span className="text-[10px] font-bold text-indigo-400 truncate mt-0.5 block">AWS IoT mTLS</span>
+                </div>
+              </div>
+
+              {/* Live Payload Stream JSON Tree */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Latest Telemetry Frame</span>
+                  {latestRawPayload && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(latestRawPayload, null, 2));
+                        showNotification('success', 'Raw JSON copied to clipboard!');
+                      }}
+                      className="text-[9px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Copy Payload
+                    </button>
+                  )}
+                </div>
+
+                <div className="bg-black/80 border border-slate-900 rounded-xl p-4 min-h-[180px] max-h-[300px] overflow-y-auto">
+                  {latestRawPayload ? (
+                    <pre className="text-emerald-400 text-2xs leading-relaxed font-mono select-all">
+                      {JSON.stringify(latestRawPayload, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="h-40 flex items-center justify-center text-slate-600 italic text-[10px]">
+                      Awaiting telemetry frame from connected MQTT devices...
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Schema Breakdown Table */}
+              {latestRawPayload && (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Auto-Discovered Key Taxonomy</span>
+                  <div className="border border-slate-800 rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-[10px] font-mono">
+                      <thead className="bg-[#0c1426] border-b border-slate-800 text-slate-400 uppercase text-[8px] tracking-wider">
+                        <tr>
+                          <th className="p-2.5">Key Name</th>
+                          <th className="p-2.5">Data Type</th>
+                          <th className="p-2.5">Current Value</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 bg-[#080d19]">
+                        {Object.keys(latestRawPayload).map(k => {
+                          const val = latestRawPayload[k];
+                          const type = typeof val;
+                          return (
+                            <tr key={k} className="hover:bg-slate-900/40">
+                              <td className="p-2.5 font-bold text-cyan-400">{k}</td>
+                              <td className="p-2.5 text-slate-400 uppercase text-[8px]">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-purple-300 font-bold">{type}</span>
+                              </td>
+                              <td className="p-2.5 font-bold text-slate-200 truncate max-w-[150px]">{String(val)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Inspector Footer */}
+            <div className="bg-[#0b1222] p-4 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setInspectorOpen(false)}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[10px] font-bold"
+              >
+                Close Inspector
               </button>
             </div>
 
