@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import { 
-  Activity, ShieldAlert, Cpu, LogOut, Building2, User, Mail, 
-  Lock, Radio, RefreshCw, Terminal, 
+import {
+  Activity, ShieldAlert, Cpu, LogOut, Building2, User, Mail,
+  Lock, Radio, RefreshCw, Terminal,
   Menu, X, CheckCircle2, AlertTriangle, Thermometer, Droplets, Gauge, Zap, Bell,
-  Code, Copy, Check, Sliders, Play, Pause, Plus, Trash2
+  Code, Copy, Check, Sliders, Play, Pause, Plus, Trash2, HelpCircle
 } from 'lucide-react';
 
 // Interfaces
@@ -130,7 +130,7 @@ export default function App() {
 
   // Device-Agnostic Schema Auto-Discovery State
   const [discoveredKeysMap, setDiscoveredKeysMap] = useState<Record<string, string[]>>({});
-  
+
   // Widget Mappings State (Persisted per device in localStorage)
   const [widgetMappingsMap, setWidgetMappingsMap] = useState<Record<string, WidgetMappingConfig[]>>(() => {
     const saved = localStorage.getItem('coreboard_widget_mappings');
@@ -165,7 +165,7 @@ export default function App() {
     if (!devId || !payload) return;
     const sysKeys = new Set(['device_id', 'device_type', 'tenant_id', 'timestamp', 'status', 'actual_device_id']);
     const keys = Object.keys(payload).filter(k => !sysKeys.has(k));
-    
+
     setDiscoveredKeysMap(prev => {
       const existing = new Set(prev[devId] || []);
       let updated = false;
@@ -258,10 +258,10 @@ export default function App() {
       const response = await fetch(`${API_BASE}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          tenantId, 
-          companyName, 
-          email, 
+        body: JSON.stringify({
+          tenantId,
+          companyName,
+          email,
           password,
           role: signupRole
         })
@@ -379,7 +379,7 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        
+
         // Reconstruct liveTelemetry from newest items
         const newLive: Record<string, TelemetryPayload> = {};
         data.forEach((item: TelemetryPayload) => {
@@ -528,7 +528,7 @@ export default function App() {
           setLatestRawPayload((prev: any) => inspectorPaused ? prev : data);
 
           const currentTime = new Date().toLocaleTimeString();
-          
+
           setLogs(prev => [
             { id: Date.now(), timestamp: currentTime, data },
             ...prev.slice(0, 24)
@@ -609,7 +609,7 @@ export default function App() {
         `[SUCCESS] Setup request registered in queue.`,
         `[INFO] Coreboard representative will complete installation on-site.`
       ]);
-      
+
       showNotification('success', `Device request sent! Awaiting Superadmin approval.`);
       setNewDeviceId('');
     } catch (err: any) {
@@ -678,7 +678,7 @@ export default function App() {
       }
 
       showNotification('success', `Simulated telemetry sent for ${simDeviceId}`);
-      
+
       // Randomize slightly for next run
       setSimFields(prev => ({
         flow_rate: Math.min(50, Math.max(10, prev.flow_rate + randomVal(-2, 2))),
@@ -734,16 +734,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#070b13] text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-black">
-      
+
       {/* Dynamic Toast Notification */}
       {notification && (
-        <div className={`fixed top-5 right-5 z-[100] px-4 py-3 rounded-lg border shadow-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${
-          notification.type === 'error' 
-            ? 'bg-rose-950/90 border-rose-500/40 text-rose-300' 
+        <div className={`fixed top-5 right-5 z-[100] px-4 py-3 rounded-lg border shadow-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${notification.type === 'error'
+            ? 'bg-rose-950/90 border-rose-500/40 text-rose-300'
             : notification.type === 'warning'
               ? 'bg-amber-950/90 border-amber-500/40 text-amber-300'
               : 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
-        }`}>
+          }`}>
           {notification.type === 'error' ? (
             <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
           ) : notification.type === 'warning' ? (
@@ -758,12 +757,12 @@ export default function App() {
       {/* SCREEN 1: LANDING & AUTHENTICATION */}
       {currentScreen === 'landing' && (
         <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-          
+
           {/* Promo Presentation Panel (Left 50%) */}
           <div className="lg:col-span-7 bg-[#0b101c] border-r border-slate-800/60 p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-950/20 via-[#070b13] to-[#070b13] -z-10"></div>
             <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
-            
+
             {/* Brand Header */}
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -788,11 +787,11 @@ export default function App() {
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
                 Now Live • Release v3.2.0 (Alarms Engine)
               </div>
-              
+
               <h2 className="text-4xl lg:text-5xl font-black orbitron leading-tight tracking-wide text-white mb-6">
                 Architectural <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400">Freedom</span> for Industrial IoT.
               </h2>
-              
+
               <p className="text-slate-400 font-mono text-sm leading-relaxed mb-8">
                 Connect and manage physical devices over secure mTLS tunnels, stream live metrics in milliseconds, and build bespoke telemetry control dashboards tailored exactly to your workflow.
               </p>
@@ -821,26 +820,24 @@ export default function App() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="w-full max-w-md mx-auto">
-              
+
               {/* Form Tab Header */}
               <div className="flex bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 mb-8 max-w-[240px]">
                 <button
                   onClick={() => { setAuthTab('login'); setAuthError(null); }}
-                  className={`flex-1 py-2 text-center rounded-lg text-xs font-bold font-mono transition-all ${
-                    authTab === 'login' 
-                      ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' 
+                  className={`flex-1 py-2 text-center rounded-lg text-xs font-bold font-mono transition-all ${authTab === 'login'
+                      ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   TENANT LOGIN
                 </button>
                 <button
                   onClick={() => { setAuthTab('signup'); setAuthError(null); }}
-                  className={`flex-1 py-2 text-center rounded-lg text-xs font-bold font-mono transition-all ${
-                    authTab === 'signup' 
-                      ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  className={`flex-1 py-2 text-center rounded-lg text-xs font-bold font-mono transition-all ${authTab === 'signup'
+                      ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   SIGN UP
                 </button>
@@ -852,8 +849,8 @@ export default function App() {
                   {authTab === 'login' ? 'Welcome Back' : 'Create Tenant Profile'}
                 </h3>
                 <p className="text-xs font-mono text-slate-500 mt-1">
-                  {authTab === 'login' 
-                    ? 'Enter your organization coordinates to access your devices.' 
+                  {authTab === 'login'
+                    ? 'Enter your organization coordinates to access your devices.'
                     : 'Establish a new tenant domain partition with absolute security.'}
                 </p>
               </div>
@@ -881,22 +878,20 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => { setSignupRole('ADMIN'); setAuthError(null); }}
-                        className={`flex-1 py-1.5 text-center rounded-lg text-[10px] font-bold font-mono transition-all ${
-                          signupRole === 'ADMIN' 
-                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' 
+                        className={`flex-1 py-1.5 text-center rounded-lg text-[10px] font-bold font-mono transition-all ${signupRole === 'ADMIN'
+                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
                             : 'text-slate-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         Tenant Admin
                       </button>
                       <button
                         type="button"
                         onClick={() => { setSignupRole('USER'); setAuthError(null); }}
-                        className={`flex-1 py-1.5 text-center rounded-lg text-[10px] font-bold font-mono transition-all ${
-                          signupRole === 'USER' 
-                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' 
+                        className={`flex-1 py-1.5 text-center rounded-lg text-[10px] font-bold font-mono transition-all ${signupRole === 'USER'
+                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
                             : 'text-slate-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         Tenant User
                       </button>
@@ -999,13 +994,12 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider mt-4 shadow-lg flex items-center justify-center gap-2 transition-all ${
-                    isSubmitting 
+                  className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider mt-4 shadow-lg flex items-center justify-center gap-2 transition-all ${isSubmitting
                       ? 'bg-slate-850 text-slate-500 cursor-not-allowed'
                       : authTab === 'login'
                         ? 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/20'
                         : 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-indigo-500/20'
-                  }`}
+                    }`}
                 >
                   {isSubmitting ? (
                     <>
@@ -1027,11 +1021,10 @@ export default function App() {
       {/* SCREEN 2: AUTHENTICATED OPERATOR DASHBOARD */}
       {currentScreen === 'dashboard' && tenant && (
         <div className="min-h-screen flex flex-col md:flex-row relative">
-          
+
           {/* Sidebar Navigation */}
-          <aside className={`bg-[#0b101c] border-r border-slate-800/80 transition-all duration-300 flex flex-col shrink-0 z-40 ${
-            sidebarOpen ? 'w-64' : 'w-20'
-          }`}>
+          <aside className={`bg-[#0b101c] border-r border-slate-800/80 transition-all duration-300 flex flex-col shrink-0 z-40 ${sidebarOpen ? 'w-64' : 'w-20'
+            }`}>
             {/* Header branding in sidebar */}
             <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
@@ -1044,7 +1037,7 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <button 
+              <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="text-slate-500 hover:text-white transition-all bg-slate-900/50 p-1 rounded border border-slate-800/50 hidden md:block"
               >
@@ -1056,11 +1049,10 @@ export default function App() {
             <nav className="flex-1 px-4 py-6 space-y-2 font-mono text-xs">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
-                  activeTab === 'overview' 
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'overview'
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                }`}
+                  }`}
               >
                 <Building2 className="w-4 h-4 shrink-0" />
                 {sidebarOpen && <span>Overview Dashboard</span>}
@@ -1068,11 +1060,10 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('telemetry')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
-                  activeTab === 'telemetry' 
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'telemetry'
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                }`}
+                  }`}
               >
                 <Activity className="w-4 h-4 shrink-0" />
                 {sidebarOpen && <span>Telemetry Monitor</span>}
@@ -1080,11 +1071,10 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('devices')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
-                  activeTab === 'devices' 
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'devices'
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                }`}
+                  }`}
               >
                 <Cpu className="w-4 h-4 shrink-0" />
                 {sidebarOpen && <span>Device Registry</span>}
@@ -1092,11 +1082,10 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('alarms')}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold ${
-                  activeTab === 'alarms' 
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'alarms'
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <Bell className="w-4 h-4 shrink-0" />
@@ -1112,11 +1101,10 @@ export default function App() {
               {tenant.role === 'ADMIN' && (
                 <button
                   onClick={() => setActiveTab('simulator')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
-                    activeTab === 'simulator' 
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'simulator'
+                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <Radio className="w-4 h-4 shrink-0" />
                   {sidebarOpen && <span>Testing Harness</span>}
@@ -1138,7 +1126,7 @@ export default function App() {
 
           {/* Main Content Workspace */}
           <div className="flex-1 flex flex-col min-w-0">
-            
+
             {/* Header */}
             <header className="bg-[#0b101c] border-b border-slate-800/80 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
               <div className="flex items-center gap-3">
@@ -1184,14 +1172,14 @@ export default function App() {
 
             {/* Dashboard Workspace */}
             <main className="flex-1 p-6 overflow-y-auto space-y-6">
-              
+
               {/* VIEW A: OVERVIEW DASHBOARD */}
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  
+
                   {/* Top Stat Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    
+
                     {/* Stat 1: Online Status */}
                     <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
                       <div>
@@ -1256,11 +1244,10 @@ export default function App() {
                           const deviceAlarms = alarms.filter(a => a.device_id === d.device_id && a.status === 'ACTIVE');
 
                           return (
-                            <div 
+                            <div
                               key={d.device_id}
-                              className={`bg-[#0a0f1d] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all hover:scale-[1.01] hover:border-slate-700/60 ${
-                                isOnline ? 'border-slate-800/80' : 'border-slate-900/60 opacity-70'
-                              }`}
+                              className={`bg-[#0a0f1d] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all hover:scale-[1.01] hover:border-slate-700/60 ${isOnline ? 'border-slate-800/80' : 'border-slate-900/60 opacity-70'
+                                }`}
                             >
                               {/* Card Header */}
                               <div className="flex items-start justify-between border-b border-slate-800/40 pb-3 mb-4">
@@ -1282,9 +1269,8 @@ export default function App() {
                                       {deviceAlarms.length} ALARM
                                     </span>
                                   )}
-                                  <span className={`w-2.5 h-2.5 rounded-full ${
-                                    isOnline ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse' : 'bg-slate-750'
-                                  }`}></span>
+                                  <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse' : 'bg-slate-750'
+                                    }`}></span>
                                 </div>
                               </div>
 
@@ -1310,9 +1296,8 @@ export default function App() {
                                                   onClick={() => handleActuateDevice(d.device_id, key, !val)}
                                                   className="w-8 h-4 rounded-full bg-slate-800 relative transition-all border border-slate-700 focus:outline-none"
                                                 >
-                                                  <span className={`w-3 h-3 rounded-full bg-cyan-400 absolute top-0.5 transition-all ${
-                                                    val ? 'right-0.5' : 'left-0.5'
-                                                  }`}></span>
+                                                  <span className={`w-3 h-3 rounded-full bg-cyan-400 absolute top-0.5 transition-all ${val ? 'right-0.5' : 'left-0.5'
+                                                    }`}></span>
                                                 </button>
                                               </div>
                                             ) : (
@@ -1338,7 +1323,7 @@ export default function App() {
                                     ? `Last update: ${new Date(data.timestamp).toLocaleTimeString()}`
                                     : 'Offline / Standby'}
                                 </span>
-                                
+
                                 <button
                                   onClick={() => {
                                     setActiveDeviceId(d.device_id);
@@ -1363,13 +1348,13 @@ export default function App() {
 
               {activeTab === 'telemetry' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  
+
                   {/* Left Column: Device Navigation */}
                   <div className="lg:col-span-4 flex flex-col gap-4">
                     <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase font-mono flex items-center justify-between">
                       <span>Registered Tenant Devices</span>
-                      <button 
-                        onClick={fetchDevices} 
+                      <button
+                        onClick={fetchDevices}
                         className="text-[10px] text-cyan-400 font-mono flex items-center gap-1 hover:text-cyan-300"
                       >
                         <RefreshCw className="w-3 h-3" /> Refresh
@@ -1404,28 +1389,26 @@ export default function App() {
                                 setActiveDeviceId(device.device_id);
                                 setSimDeviceId(device.device_id);
                               }}
-                              className={`text-left w-full border rounded-xl p-4 transition-all duration-300 relative overflow-hidden flex items-center justify-between ${
-                                isSelected 
+                              className={`text-left w-full border rounded-xl p-4 transition-all duration-300 relative overflow-hidden flex items-center justify-between ${isSelected
                                   ? hasAlarms
-                                    ? isCriticalAlarm 
+                                    ? isCriticalAlarm
                                       ? 'bg-rose-950/20 border-rose-500 shadow-lg shadow-rose-500/10'
                                       : 'bg-amber-950/20 border-amber-500 shadow-lg shadow-amber-500/10'
-                                    : `bg-[#0d162a]/90 border-${color}-500/80 shadow-lg shadow-${color}-500/10` 
+                                    : `bg-[#0d162a]/90 border-${color}-500/80 shadow-lg shadow-${color}-500/10`
                                   : hasAlarms
-                                    ? isCriticalAlarm 
+                                    ? isCriticalAlarm
                                       ? 'bg-rose-950/10 border-rose-900/60 hover:bg-rose-950/20'
                                       : 'bg-amber-950/10 border-amber-900/60 hover:bg-amber-950/20'
                                     : 'bg-[#0c1222]/80 border-slate-800 hover:border-slate-700 hover:bg-[#0e1628]/50'
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center gap-3 z-10">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                                  isSelected 
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isSelected
                                     ? hasAlarms
                                       ? isCriticalAlarm ? 'bg-rose-900/30 text-rose-400 border border-rose-500/20' : 'bg-amber-900/30 text-amber-400 border border-amber-500/20'
-                                      : 'bg-cyan-950/60 text-cyan-400 border border-cyan-500/20' 
+                                      : 'bg-cyan-950/60 text-cyan-400 border border-cyan-500/20'
                                     : 'bg-slate-900/80 text-slate-400 border border-slate-800'
-                                }`}>
+                                  }`}>
                                   {getDeviceIcon(device.device_type)}
                                 </div>
                                 <div>
@@ -1443,11 +1426,10 @@ export default function App() {
 
                               <div className="text-right flex flex-col items-end z-10 font-mono">
                                 {hasAlarms ? (
-                                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded border ${
-                                    isCriticalAlarm 
-                                      ? 'bg-rose-950/60 border-rose-500/30 text-rose-400' 
+                                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded border ${isCriticalAlarm
+                                      ? 'bg-rose-950/60 border-rose-500/30 text-rose-400'
                                       : 'bg-amber-950/60 border-amber-500/30 text-amber-400'
-                                  }`}>
+                                    }`}>
                                     ALERT
                                   </span>
                                 ) : isLive ? (
@@ -1486,7 +1468,7 @@ export default function App() {
                       (() => {
                         const activeDevice = devices.find(d => d.device_id === activeDeviceId) || { device_type: 'unknown', device_id: activeDeviceId };
                         const telemetry = liveTelemetry[activeDeviceId];
-                        
+
                         // Check active alarms for this device
                         const deviceAlarms = alarms.filter(a => a.device_id === activeDeviceId && (a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED'));
                         const color = deviceAlarms.length > 0 ? (deviceAlarms.some(a => a.severity === 'CRITICAL') ? 'rose' : 'amber') : getDeviceColor(activeDevice.device_type);
@@ -1500,17 +1482,16 @@ export default function App() {
                         const powerPercent = telemetry && activeDevice.device_type === 'power_meter' ? Math.min(100, Math.max(0, ((telemetry.power || 0) / 2.0) * 100)) : 0;
 
                         return (
-                          <div className={`bg-[#0c1222] border rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[420px] transition-all duration-300 ${
-                            deviceAlarms.length > 0 
+                          <div className={`bg-[#0c1222] border rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[420px] transition-all duration-300 ${deviceAlarms.length > 0
                               ? deviceAlarms.some(a => a.severity === 'CRITICAL')
                                 ? 'border-rose-500/40 shadow-rose-950/10'
                                 : 'border-amber-500/40 shadow-amber-950/10'
                               : 'border-slate-800'
-                          }`}>
-                            
+                            }`}>
+
                             {/* Glow decoration */}
                             <div className={`absolute -top-12 -right-12 w-48 h-48 bg-${color}-500/5 rounded-full blur-3xl pointer-events-none`}></div>
-                            
+
                             {/* Device Info Header */}
                             <div className="flex justify-between items-start border-b border-slate-800/80 pb-4 mb-6 z-10">
                               <div>
@@ -1535,15 +1516,14 @@ export default function App() {
                                   <Sliders className="w-3.5 h-3.5 text-cyan-400" />
                                   <span>Widget Studio</span>
                                 </button>
-                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono uppercase border ${
-                                  deviceAlarms.length > 0
+                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono uppercase border ${deviceAlarms.length > 0
                                     ? deviceAlarms.some(a => a.severity === 'CRITICAL')
                                       ? 'bg-rose-950/50 border-rose-500/30 text-rose-400'
                                       : 'bg-amber-950/50 border-amber-500/30 text-amber-400'
                                     : 'bg-emerald-950/40 border-emerald-500/20 text-emerald-400'
-                                }`}>
-                                  {deviceAlarms.length > 0 
-                                    ? `${deviceAlarms.length} ACTIVE ALARM${deviceAlarms.length > 1 ? 'S' : ''}` 
+                                  }`}>
+                                  {deviceAlarms.length > 0
+                                    ? `${deviceAlarms.length} ACTIVE ALARM${deviceAlarms.length > 1 ? 'S' : ''}`
                                     : telemetry ? (telemetry.status || 'OPTIMAL').toUpperCase() : 'NO DATA RECEIVED'}
                                 </span>
                               </div>
@@ -1551,11 +1531,10 @@ export default function App() {
 
                             {/* Alarms Detail banner if device has active alarms */}
                             {deviceAlarms.length > 0 && (
-                              <div className={`mb-6 p-4 rounded-xl border font-mono text-xs flex flex-col gap-2 ${
-                                deviceAlarms.some(a => a.severity === 'CRITICAL')
+                              <div className={`mb-6 p-4 rounded-xl border font-mono text-xs flex flex-col gap-2 ${deviceAlarms.some(a => a.severity === 'CRITICAL')
                                   ? 'bg-rose-950/30 border-rose-500/20 text-rose-300'
                                   : 'bg-amber-950/30 border-amber-500/20 text-amber-300'
-                              }`}>
+                                }`}>
                                 <div className="font-bold flex items-center gap-2">
                                   <ShieldAlert className="w-4 h-4 shrink-0" />
                                   <span>ACTIVE INCIDENT DETECTED</span>
@@ -1565,7 +1544,7 @@ export default function App() {
                                     <div key={a.alarm_id} className="flex justify-between items-center">
                                       <span>• {a.message}</span>
                                       {tenant.role === 'ADMIN' && (
-                                        <button 
+                                        <button
                                           onClick={() => handleAcknowledgeAlarm(a.alarm_id)}
                                           className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-all text-2xs font-bold font-mono uppercase"
                                         >
@@ -1588,7 +1567,7 @@ export default function App() {
                                 </div>
                               ) : (
                                 <div className="space-y-6">
-                                  
+
                                   {/* Type: PUMP */}
                                   {activeDevice.device_type === 'pump' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1733,7 +1712,7 @@ export default function App() {
                                                       {boolVal ? 'ACTIVE / ON' : 'INACTIVE / OFF'}
                                                     </div>
                                                   </div>
-                                                  
+
                                                   {/* Toggle Switch */}
                                                   <button
                                                     onClick={() => handleActuateDevice(activeDevice.device_id, key, !boolVal)}
@@ -1767,7 +1746,7 @@ export default function App() {
                               <span>Ingestion Mode: <span className="text-cyan-500 font-bold uppercase">MQTT Gateway</span></span>
                               <span>Timestamp: <span className="text-slate-400 font-semibold">{telemetry ? telemetry.timestamp : 'Awaiting Connection'}</span></span>
                             </div>
-                            
+
                           </div>
                         );
                       })()
@@ -1784,7 +1763,7 @@ export default function App() {
               {/* VIEW B: DEVICE REGISTRY (THINGS) */}
               {activeTab === 'devices' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  
+
                   {/* Request Form (Tenant Admin only) */}
                   {tenant.role === 'ADMIN' && (
                     <div className="lg:col-span-5 flex flex-col gap-6">
@@ -1822,11 +1801,10 @@ export default function App() {
                                   key={preset}
                                   type="button"
                                   onClick={() => setNewDeviceType(preset)}
-                                  className={`px-2 py-0.5 rounded border transition-all ${
-                                    newDeviceType === preset
+                                  className={`px-2 py-0.5 rounded border transition-all ${newDeviceType === preset
                                       ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
                                       : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                                  }`}
+                                    }`}
                                 >
                                   {preset}
                                 </button>
@@ -1837,11 +1815,10 @@ export default function App() {
                           <button
                             type="submit"
                             disabled={isProvisioning}
-                            className={`w-full py-3 rounded-xl font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${
-                              isProvisioning
+                            className={`w-full py-3 rounded-xl font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${isProvisioning
                                 ? 'bg-slate-850 text-slate-500 cursor-not-allowed border border-slate-800'
                                 : 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/25'
-                            }`}
+                              }`}
                           >
                             {isProvisioning ? (
                               <>
@@ -1885,7 +1862,7 @@ export default function App() {
                     {/* Device list */}
                     <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl">
                       <h3 className="text-sm font-bold orbitron text-white mb-4 uppercase tracking-wide">Registered Devices Registry</h3>
-                      
+
                       <div className="overflow-x-auto">
                         <table className="w-full text-left font-mono text-xs border-collapse">
                           <thead>
@@ -1965,7 +1942,7 @@ export default function App() {
               {/* VIEW C: ALARMS CONSOLE */}
               {activeTab === 'alarms' && (
                 <div className="space-y-6">
-                  
+
                   {/* Alarm Control Filters Panel */}
                   <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-wrap gap-4 items-center justify-between">
                     <div>
@@ -1979,31 +1956,28 @@ export default function App() {
                     <div className="flex items-center gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800 font-mono text-2xs">
                       <button
                         onClick={() => setAlarmFilter('ACTIVE_ACK')}
-                        className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                          alarmFilter === 'ACTIVE_ACK' 
-                            ? 'bg-rose-500 text-white' 
+                        className={`px-3 py-1.5 rounded-lg font-bold transition-all ${alarmFilter === 'ACTIVE_ACK'
+                            ? 'bg-rose-500 text-white'
                             : 'text-slate-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         ACTIVE & ACK ({alarms.filter(a => a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED').length})
                       </button>
                       <button
                         onClick={() => setAlarmFilter('CLEARED')}
-                        className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                          alarmFilter === 'CLEARED' 
-                            ? 'bg-emerald-600 text-white' 
+                        className={`px-3 py-1.5 rounded-lg font-bold transition-all ${alarmFilter === 'CLEARED'
+                            ? 'bg-emerald-600 text-white'
                             : 'text-slate-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         CLEARED ({alarms.filter(a => a.status === 'CLEARED').length})
                       </button>
                       <button
                         onClick={() => setAlarmFilter('ALL')}
-                        className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                          alarmFilter === 'ALL' 
-                            ? 'bg-slate-700 text-white' 
+                        className={`px-3 py-1.5 rounded-lg font-bold transition-all ${alarmFilter === 'ALL'
+                            ? 'bg-slate-700 text-white'
                             : 'text-slate-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         ALL HISTORY ({alarms.length})
                       </button>
@@ -2043,9 +2017,8 @@ export default function App() {
                               return (
                                 <tr key={a.alarm_id} className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-all">
                                   <td className="py-4">
-                                    <span className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase border ${
-                                      isCritical ? 'bg-rose-950 text-rose-400 border-rose-800/30' : 'bg-amber-950 text-amber-400 border-amber-800/30'
-                                    }`}>
+                                    <span className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase border ${isCritical ? 'bg-rose-950 text-rose-400 border-rose-800/30' : 'bg-amber-950 text-amber-400 border-amber-800/30'
+                                      }`}>
                                       {a.severity}
                                     </span>
                                   </td>
@@ -2103,7 +2076,7 @@ export default function App() {
                         Live Raw Telemetry Streams ({logs.length} events logged)
                       </span>
                     </h2>
-                    
+
                     <div className="flex-1 bg-black/60 rounded-lg p-4 font-mono text-[9px] overflow-y-auto border border-slate-900 flex flex-col gap-2">
                       {logs.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-650">
@@ -2149,22 +2122,20 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => setSimMode('freeform')}
-                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
-                            simMode === 'freeform'
+                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${simMode === 'freeform'
                               ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
                               : 'text-slate-400 hover:text-slate-200'
-                          }`}
+                            }`}
                         >
                           <Code className="w-3.5 h-3.5" /> Freeform Custom JSON Payload
                         </button>
                         <button
                           type="button"
                           onClick={() => setSimMode('preset')}
-                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
-                            simMode === 'preset'
+                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${simMode === 'preset'
                               ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
                               : 'text-slate-400 hover:text-slate-200'
-                          }`}
+                            }`}
                         >
                           <Radio className="w-3.5 h-3.5" /> Preset Metric Controls
                         </button>
@@ -2237,119 +2208,118 @@ export default function App() {
                         (() => {
                           const targetDevice = devices.find(d => d.device_id === simDeviceId) || devices[0];
                           const type = targetDevice ? targetDevice.device_type : 'pump';
-                        
-                        return (
-                          <div className="bg-[#10192e]/40 border border-slate-850 p-5 rounded-xl space-y-4">
-                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">
-                              3. Telemetry Payload Metric Inputs ({type.toUpperCase()})
-                            </h4>
 
-                            {type === 'pump' && (
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-slate-500 mb-1">Flow Rate (L/min) [Normal: 15-50]</label>
-                                  <input
-                                    type="number"
-                                    step="0.1"
-                                    value={simFields.flow_rate}
-                                    onChange={(e) => setSimFields({ ...simFields, flow_rate: parseFloat(e.target.value) })}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-slate-500 mb-1">Pump Temp (°C) [Alarm &gt;60 / &gt;70]</label>
-                                  <input
-                                    type="number"
-                                    step="0.1"
-                                    value={simFields.temperature}
-                                    onChange={(e) => setSimFields({ ...simFields, temperature: parseFloat(e.target.value) })}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                          return (
+                            <div className="bg-[#10192e]/40 border border-slate-850 p-5 rounded-xl space-y-4">
+                              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+                                3. Telemetry Payload Metric Inputs ({type.toUpperCase()})
+                              </h4>
 
-                            {type === 'temp_sensor' && (
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-slate-500 mb-1">Ambient Temp (°C) [Alarm &gt;38]</label>
-                                  <input
-                                    type="number"
-                                    step="0.1"
-                                    value={simFields.temperature}
-                                    onChange={(e) => setSimFields({ ...simFields, temperature: parseFloat(e.target.value) })}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
-                                  />
+                              {type === 'pump' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-slate-500 mb-1">Flow Rate (L/min) [Normal: 15-50]</label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={simFields.flow_rate}
+                                      onChange={(e) => setSimFields({ ...simFields, flow_rate: parseFloat(e.target.value) })}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-slate-500 mb-1">Pump Temp (°C) [Alarm &gt;60 / &gt;70]</label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={simFields.temperature}
+                                      onChange={(e) => setSimFields({ ...simFields, temperature: parseFloat(e.target.value) })}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    />
+                                  </div>
                                 </div>
-                                <div>
-                                  <label className="block text-slate-500 mb-1">Humidity (%) [Alarm &gt;90]</label>
-                                  <input
-                                    type="number"
-                                    step="1"
-                                    value={simFields.humidity}
-                                    onChange={(e) => setSimFields({ ...simFields, humidity: parseFloat(e.target.value) })}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                              )}
 
-                            {type === 'pressure_sensor' && (
-                              <div>
-                                <label className="block text-slate-500 mb-1">Pipeline Pressure (Bar) [Alarm &gt;4.5 / &gt;5.0]</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={simFields.pressure}
-                                  onChange={(e) => setSimFields({ ...simFields, pressure: parseFloat(e.target.value) })}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
-                                />
-                              </div>
-                            )}
-
-                            {type === 'power_meter' && (
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-slate-500 mb-1">Line Voltage (V)</label>
-                                  <input
-                                    type="number"
-                                    step="0.1"
-                                    value={simFields.voltage}
-                                    onChange={(e) => setSimFields({ ...simFields, voltage: parseFloat(e.target.value) })}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
-                                  />
+                              {type === 'temp_sensor' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-slate-500 mb-1">Ambient Temp (°C) [Alarm &gt;38]</label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={simFields.temperature}
+                                      onChange={(e) => setSimFields({ ...simFields, temperature: parseFloat(e.target.value) })}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-slate-500 mb-1">Humidity (%) [Alarm &gt;90]</label>
+                                    <input
+                                      type="number"
+                                      step="1"
+                                      value={simFields.humidity}
+                                      onChange={(e) => setSimFields({ ...simFields, humidity: parseFloat(e.target.value) })}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    />
+                                  </div>
                                 </div>
+                              )}
+
+                              {type === 'pressure_sensor' && (
                                 <div>
-                                  <label className="block text-slate-500 mb-1">Line Current Draw (A) [Alarm Power &gt;1.2 / &gt;1.5 kW]</label>
+                                  <label className="block text-slate-500 mb-1">Pipeline Pressure (Bar) [Alarm &gt;4.5 / &gt;5.0]</label>
                                   <input
                                     type="number"
                                     step="0.01"
-                                    value={simFields.current}
-                                    onChange={(e) => setSimFields({ ...simFields, current: parseFloat(e.target.value) })}
+                                    value={simFields.pressure}
+                                    onChange={(e) => setSimFields({ ...simFields, pressure: parseFloat(e.target.value) })}
                                     className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
                                   />
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {(!['pump', 'temp_sensor', 'pressure_sensor', 'power_meter'].includes(type)) && (
-                              <p className="text-[10px] text-slate-500 italic">
-                                Generic device types submit mock dynamic numeric values.
-                              </p>
-                            )}
+                              {type === 'power_meter' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-slate-500 mb-1">Line Voltage (V)</label>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={simFields.voltage}
+                                      onChange={(e) => setSimFields({ ...simFields, voltage: parseFloat(e.target.value) })}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-slate-500 mb-1">Line Current Draw (A) [Alarm Power &gt;1.2 / &gt;1.5 kW]</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={simFields.current}
+                                      onChange={(e) => setSimFields({ ...simFields, current: parseFloat(e.target.value) })}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    />
+                                  </div>
+                                </div>
+                              )}
 
-                          </div>
-                        );
-                      })())}
+                              {(!['pump', 'temp_sensor', 'pressure_sensor', 'power_meter'].includes(type)) && (
+                                <p className="text-[10px] text-slate-500 italic">
+                                  Generic device types submit mock dynamic numeric values.
+                                </p>
+                              )}
+
+                            </div>
+                          );
+                        })())}
 
                       <button
                         type="submit"
                         disabled={isSimulating}
-                        className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${
-                          isSimulating
+                        className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${isSimulating
                             ? 'bg-slate-850 text-slate-500 cursor-not-allowed border border-slate-800'
                             : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/25'
-                        }`}
+                          }`}
                       >
                         {isSimulating ? (
                           <>
@@ -2386,7 +2356,7 @@ export default function App() {
       {selectedTemplateDevice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-[#0c1222] border border-cyan-500/30 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
-            
+
             {/* Modal Header */}
             <div className="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <div>
@@ -2396,7 +2366,7 @@ export default function App() {
                 </h3>
                 <p className="text-[10px] text-slate-500 mt-0.5">Specifications for Thing: <span className="text-cyan-400 font-bold">{selectedTemplateDevice.device_id}</span></p>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedTemplateDevice(null)}
                 className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-all"
               >
@@ -2406,10 +2376,10 @@ export default function App() {
 
             {/* Modal Body: 2-Column Responsive Grid */}
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[80vh] overflow-y-auto">
-              
+
               {/* Left Column: Broker & Connection Parameters */}
               <div className="space-y-4">
-                
+
                 {/* Target Broker Endpoint */}
                 <div className="space-y-2">
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AWS IoT Broker Target Endpoint</h4>
@@ -2461,7 +2431,7 @@ export default function App() {
 
               {/* Right Column: Schema Agnosticism & JSON Body Sample */}
               <div className="space-y-4 flex flex-col justify-between">
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -2501,9 +2471,19 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Schema Agnosticism Banner */}
-                  <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3.5 rounded-xl text-[10px] leading-relaxed">
-                    💡 <strong>Schema Flexibility Note:</strong> You do <strong>NOT</strong> have to follow a fixed payload structure! Your hardware can publish <strong>any custom JSON body with whatever key names</strong> (e.g. <code>{'{"s1": 42.5, "sensor_2": 18.1}'}</code>). The Gateway ingests all fields dynamically.
+                  {/* Schema Agnosticism & Rationale Banner */}
+                  <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3.5 rounded-xl text-[10px] leading-relaxed space-y-2">
+                    <div className="flex items-center gap-1.5 font-bold text-cyan-200 text-xs">
+                      <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0" />
+                      Why is a Sample JSON provided if schemas are 100% flexible?
+                    </div>
+                    <p className="text-[10px] text-slate-300 leading-relaxed">
+                      This sample JSON is provided purely as a <strong>starter reference template</strong> so firmware engineers and QA testers can immediately copy-paste a working payload into tools like <strong>MQTTX, Postman, or test scripts</strong> during initial mTLS connection verification.
+                    </p>
+                    <div className="pt-1.5 border-t border-cyan-500/20 text-[9.5px] text-cyan-400/90 leading-normal flex items-start gap-1.5">
+                      <span className="font-bold text-emerald-400 shrink-0">⚡ No Fixed Schema Enforced:</span>
+                      <span>Your System is completely device-agnostic and can publish <strong>any custom JSON structure with whatever field names</strong> (e.g. <code>{'{"v_out": 230, "rpm": 1450, "pressure": 4.2}'}</code>). The Gateway ingests and discovers all keys dynamically!</span>
+                    </div>
                   </div>
 
                   <div className="bg-black/80 border border-slate-900 rounded-xl p-4 min-h-[220px] max-h-[300px] overflow-y-auto">
@@ -2545,7 +2525,7 @@ export default function App() {
       {isStudioOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-[#0c1222] border border-cyan-500/30 rounded-2xl w-full max-w-3xl lg:max-w-4xl overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
-            
+
             {/* Studio Header */}
             <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <div>
@@ -2557,7 +2537,7 @@ export default function App() {
                   Configure custom visual gauges and data bindings for Thing: <span className="text-cyan-400 font-bold">{studioDeviceId}</span>
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsStudioOpen(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
               >
@@ -2567,7 +2547,7 @@ export default function App() {
 
             {/* Studio Content */}
             <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-              
+
               {/* Add Mapping Rule Form */}
               <div className="bg-[#080d19] border border-slate-800/90 rounded-xl p-4 space-y-4">
                 <h4 className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -2732,7 +2712,7 @@ export default function App() {
       {inspectorOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out] flex justify-end">
           <div className="bg-[#080d1a] border-l border-cyan-500/30 w-full max-w-xl h-full flex flex-col shadow-2xl font-mono text-xs">
-            
+
             {/* Inspector Header */}
             <div className="bg-[#0b1222] px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -2742,14 +2722,13 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setInspectorPaused(!inspectorPaused)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1 border transition-all ${
-                    inspectorPaused ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                  }`}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1 border transition-all ${inspectorPaused ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                    }`}
                 >
                   {inspectorPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
                   {inspectorPaused ? 'Paused' : 'Streaming'}
                 </button>
-                <button 
+                <button
                   onClick={() => setInspectorOpen(false)}
                   className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
                 >
@@ -2760,7 +2739,7 @@ export default function App() {
 
             {/* Inspector Content */}
             <div className="flex-1 p-6 space-y-6 overflow-y-auto">
-              
+
               {/* Stream Metrics Banner */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-[#0c1426] border border-slate-800 p-3 rounded-xl">
