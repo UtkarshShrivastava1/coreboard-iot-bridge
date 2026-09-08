@@ -2472,17 +2472,27 @@ export default function App() {
                   </div>
 
                   {/* Schema Agnosticism & Rationale Banner */}
-                  <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3.5 rounded-xl text-[10px] leading-relaxed space-y-2">
-                    <div className="flex items-center gap-1.5 font-bold text-cyan-200 text-xs">
-                      <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0" />
-                      Why is a Sample JSON provided if schemas are 100% flexible?
+                  <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3.5 rounded-xl text-[10px] leading-relaxed space-y-2.5">
+                    {/* Top: No Fixed Schema Enforced */}
+                    <div className="flex items-start gap-2">
+                      <Zap className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-emerald-400 text-xs uppercase tracking-wide block">⚡ No Fixed Schema Enforced</span>
+                        <p className="text-[10px] text-cyan-300/90 leading-relaxed mt-0.5">
+                          Your system is completely device-agnostic and accepts <strong>any valid custom JSON structure with whatever key names</strong> (e.g. <code>{'{"v_out": 230, "rpm": 1450, "pressure": 4.2}'}</code>). The Gateway dynamically ingests and auto-discovers all keys.
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      This sample JSON is provided purely as a <strong>starter reference template</strong> so firmware engineers and QA testers can immediately copy-paste a working payload into tools like <strong>MQTTX, Postman, or test scripts</strong> during initial mTLS connection verification.
-                    </p>
-                    <div className="pt-1.5 border-t border-cyan-500/20 text-[9.5px] text-cyan-400/90 leading-normal flex items-start gap-1.5">
-                      <span className="font-bold text-emerald-400 shrink-0">⚡ No Fixed Schema Enforced:</span>
-                      <span>Your System is completely device-agnostic and can publish <strong>any custom JSON structure with whatever field names</strong> (e.g. <code>{'{"v_out": 230, "rpm": 1450, "pressure": 4.2}'}</code>). The Gateway ingests and discovers all keys dynamically!</span>
+
+                    {/* Bottom: Why Sample JSON is Provided */}
+                    <div className="pt-2 border-t border-cyan-500/20 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-cyan-200 text-[11px]">
+                        <HelpCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        Why is a Sample JSON provided if schemas are 100% flexible?
+                      </div>
+                      <p className="text-[9.5px] text-slate-300 leading-relaxed pl-5">
+                        This sample JSON is provided purely as a <strong>starter reference template</strong> so firmware engineers and QA testers can immediately copy-paste a working payload into tools like <strong>MQTTX, Postman, or test scripts</strong> during initial mTLS connection verification before flashing custom firmware.
+                      </p>
                     </div>
                   </div>
 
