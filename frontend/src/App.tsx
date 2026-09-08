@@ -2385,16 +2385,16 @@ export default function App() {
       {/* Modal: View MQTT & JSON Payload Specifications */}
       {selectedTemplateDevice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-[#0c1222] border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
+          <div className="bg-[#0c1222] border border-cyan-500/30 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
             
             {/* Modal Header */}
-            <div className="bg-slate-900/60 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <div className="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide flex items-center gap-2">
                   <Code className="w-4 h-4 text-cyan-400" />
-                  Integration Specifications
+                  Integration Specifications & Telemetry Contract
                 </h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">Specifications for device: <span className="text-cyan-400 font-bold">{selectedTemplateDevice.device_id}</span></p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Specifications for Thing: <span className="text-cyan-400 font-bold">{selectedTemplateDevice.device_id}</span></p>
               </div>
               <button 
                 onClick={() => setSelectedTemplateDevice(null)}
@@ -2404,63 +2404,111 @@ export default function App() {
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 space-y-4">
+            {/* Modal Body: 2-Column Responsive Grid */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[80vh] overflow-y-auto">
               
-              {/* Target Broker Endpoint */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AWS IoT Broker Target Endpoint</h4>
-                <div className="bg-black/40 border border-slate-900 rounded-lg p-3 space-y-1.5 text-[10px]">
-                  <div>
-                    <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Broker Hostname</span>
-                    <code className="text-cyan-400 select-all block font-bold">a3jn1jb4u5t66x-ats.iot.ap-south-1.amazonaws.com</code>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-400 text-[9px] pt-1 border-t border-slate-900">
-                    <span>Protocol: <strong className="text-emerald-400">mqtts://</strong></span>
-                    <span>Port: <strong className="text-emerald-400">8883 (mTLS)</strong></span>
-                  </div>
-                </div>
-              </div>
-
-              {/* MQTT Topics */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">MQTT Topics</h4>
-                <div className="bg-black/40 border border-slate-900 rounded-lg p-3 space-y-2 text-[10px]">
-                  <div>
-                    <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Uplink (Publish Telemetry)</span>
-                    <code className="text-emerald-400 select-all block font-bold">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/pub</code>
-                  </div>
-                  {["smart_lock", "smart_switch"].includes(selectedTemplateDevice.device_type) && (
+              {/* Left Column: Broker & Connection Parameters */}
+              <div className="space-y-4">
+                
+                {/* Target Broker Endpoint */}
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AWS IoT Broker Target Endpoint</h4>
+                  <div className="bg-black/40 border border-slate-900 rounded-xl p-3.5 space-y-2 text-[10px]">
                     <div>
-                      <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Downlink (Subscribe to commands)</span>
-                      <code className="text-cyan-400 select-all block font-bold">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/sub</code>
+                      <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Broker Hostname</span>
+                      <code className="text-cyan-400 select-all block font-bold text-xs mt-0.5">a3jn1jb4u5t66x-ats.iot.ap-south-1.amazonaws.com</code>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Required mTLS Certs Checklist */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Required mTLS Credentials Package</h4>
-                <div className="bg-black/40 border border-slate-900 rounded-lg p-2.5 text-[9px] text-slate-300 font-mono flex flex-wrap gap-2">
-                  <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">✓ AmazonRootCA1.pem</span>
-                  <span className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 flex items-center gap-1">✓ Device_certificate.crt</span>
-                  <span className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300 flex items-center gap-1">✓ Private_key.key</span>
-                </div>
-              </div>
-
-              {/* JSON Payload Specifications */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Device-Agnostic JSON Payload (Sample)</h4>
-                    <span className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold text-[8px] uppercase tracking-wider">
-                      ⚡ Any Schema Accepted
-                    </span>
+                    <div className="flex justify-between items-center text-slate-400 text-[9px] pt-2 border-t border-slate-900/80">
+                      <span>Protocol: <strong className="text-emerald-400 font-bold">mqtts://</strong></span>
+                      <span>Port: <strong className="text-emerald-400 font-bold">8883 (mTLS)</strong></span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      const payloadStr = JSON.stringify(
+                </div>
+
+                {/* MQTT Topics */}
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">MQTT Topics</h4>
+                  <div className="bg-black/40 border border-slate-900 rounded-xl p-3.5 space-y-2.5 text-[10px]">
+                    <div>
+                      <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Uplink (Publish Telemetry)</span>
+                      <code className="text-emerald-400 select-all block font-bold text-xs mt-0.5">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/pub</code>
+                    </div>
+                    {["smart_lock", "smart_switch"].includes(selectedTemplateDevice.device_type) && (
+                      <div>
+                        <span className="text-slate-500 block uppercase text-[8px] tracking-wide">Downlink (Subscribe to commands)</span>
+                        <code className="text-cyan-400 select-all block font-bold text-xs mt-0.5">tenants/{tenant?.tenantId}/devices/{selectedTemplateDevice.device_id}/sub</code>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Required mTLS Certs Checklist */}
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Required mTLS Credentials Package</h4>
+                  <div className="bg-black/40 border border-slate-900 rounded-xl p-3 text-[9px] text-slate-300 font-mono flex flex-wrap gap-2">
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 font-bold flex items-center gap-1">✓ AmazonRootCA1.pem</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 font-bold flex items-center gap-1">✓ Device_certificate.crt</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-500/30 text-purple-300 font-bold flex items-center gap-1">✓ Private_key.key</span>
+                  </div>
+                </div>
+
+                {/* TLS warning */}
+                <div className="bg-amber-950/20 border border-amber-500/20 text-amber-300/90 p-3.5 rounded-xl text-[10px] leading-relaxed">
+                  ⚠️ <span className="font-bold">Important:</span> Secure mTLS connections require client certificates generated by SuperAdmin. Handshakes execute strictly over TLS port 8883.
+                </div>
+
+              </div>
+
+              {/* Right Column: Schema Agnosticism & JSON Body Sample */}
+              <div className="space-y-4 flex flex-col justify-between">
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">JSON Body Payload (Sample)</h4>
+                      <span className="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold text-[8px] uppercase tracking-wider">
+                        ⚡ Any Schema Accepted
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const payloadStr = JSON.stringify(
+                          {
+                            device_id: selectedTemplateDevice.device_id,
+                            s1: 25.4,
+                            temp_c: 32.5,
+                            batt_v: 3.8,
+                            status: "optimal"
+                          },
+                          null,
+                          2
+                        );
+                        navigator.clipboard.writeText(payloadStr);
+                        setIsCopied(true);
+                        setTimeout(() => setIsCopied(false), 2000);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-cyan-400 hover:text-white transition-all font-bold"
+                    >
+                      {isCopied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" /> Copy Sample JSON
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Schema Agnosticism Banner */}
+                  <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3.5 rounded-xl text-[10px] leading-relaxed">
+                    💡 <strong>Schema Flexibility Note:</strong> You do <strong>NOT</strong> have to follow a fixed payload structure! Your hardware can publish <strong>any custom JSON body with whatever key names</strong> (e.g. <code>{'{"s1": 42.5, "sensor_2": 18.1}'}</code>). The Gateway ingests all fields dynamically.
+                  </div>
+
+                  <div className="bg-black/80 border border-slate-900 rounded-xl p-4 min-h-[220px] max-h-[300px] overflow-y-auto">
+                    <pre className="text-emerald-400 text-xs leading-relaxed select-all font-mono">
+                      {JSON.stringify(
                         {
                           device_id: selectedTemplateDevice.device_id,
                           s1: 25.4,
@@ -2470,59 +2518,20 @@ export default function App() {
                         },
                         null,
                         2
-                      );
-                      navigator.clipboard.writeText(payloadStr);
-                      setIsCopied(true);
-                      setTimeout(() => setIsCopied(false), 2000);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] text-cyan-400 hover:text-white transition-all font-bold"
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" /> Copy Sample JSON
-                      </>
-                    )}
-                  </button>
+                      )}
+                    </pre>
+                  </div>
                 </div>
 
-                {/* Agnosticism Banner */}
-                <div className="bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 p-3 rounded-lg text-[10px] leading-relaxed">
-                  💡 <strong>Schema Flexibility Note:</strong> You do <strong>NOT</strong> have to follow a fixed payload structure! Your hardware can publish <strong>any custom JSON body with whatever key names</strong> (e.g. <code>{'{"s1": 42.5, "sensor_2": 18.1}'}</code>). The Gateway ingests all fields dynamically.
-                </div>
-
-                <div className="bg-black/60 border border-slate-900 rounded-lg p-4 max-h-[220px] overflow-y-auto">
-                  <pre className="text-emerald-400 text-2xs leading-relaxed select-all">
-                    {JSON.stringify(
-                      {
-                        device_id: selectedTemplateDevice.device_id,
-                        s1: 25.4,
-                        temp_c: 32.5,
-                        batt_v: 3.8,
-                        status: "optimal"
-                      },
-                      null,
-                      2
-                    )}
-                  </pre>
-                </div>
-              </div>
-
-              {/* TLS warning */}
-              <div className="bg-amber-950/20 border border-amber-500/20 text-amber-300/80 p-3 rounded-lg text-[9px] leading-relaxed">
-                ⚠️ <span className="font-bold">Important:</span> Connections require dynamic X.509 client certificates and private keys generated by the SuperAdmin team. Secure handshakes run over TLS port 8883.
               </div>
 
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-slate-900/40 px-6 py-3.5 border-t border-slate-800 flex justify-end">
+            <div className="bg-slate-900/60 px-6 py-3.5 border-t border-slate-800 flex justify-end">
               <button
                 onClick={() => setSelectedTemplateDevice(null)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[11px] font-bold"
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-[11px] font-bold"
               >
                 Close Specifications
               </button>
@@ -2535,7 +2544,7 @@ export default function App() {
       {/* Modal: Dynamic Widget & Field Mapping Studio */}
       {isStudioOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-[#0c1222] border border-cyan-500/30 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
+          <div className="bg-[#0c1222] border border-cyan-500/30 rounded-2xl w-full max-w-3xl lg:max-w-4xl overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out] font-mono text-xs">
             
             {/* Studio Header */}
             <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
