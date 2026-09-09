@@ -10,7 +10,10 @@ import {
   Play, 
   Pause, 
   AlertTriangle, 
-  Trash2
+  Trash2,
+  Code,
+  Copy,
+  Check
 } from 'lucide-react';
 
 interface DeviceConnection {
@@ -52,6 +55,14 @@ export default function App() {
   const [activeDevices, setActiveDevices] = useState<DeviceConnection[]>([]);
   const [selectedDeviceName, setSelectedDeviceName] = useState<string>('');
   
+  // Simulation Mode & Custom Payload states
+  const [simMode, setSimMode] = useState<'sliders' | 'freeform'>('sliders');
+  const [customJsonStr, setCustomJsonStr] = useState<string>(
+    JSON.stringify({ s1: 42.5, temp_c: 32.5, batt_v: 3.8, status: "optimal" }, null, 2)
+  );
+  const [customJsonError, setCustomJsonError] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+
   // Slider states for the currently selected active device
   const [sliders, setSliders] = useState<Record<string, number>>({});
   const [isAuto, setIsAuto] = useState(false);
@@ -379,6 +390,21 @@ export default function App() {
     addSystemLog(selectedDeviceName, 'info', `Fault injected: ${faultType.toUpperCase()}`);
   };
 
+  const handlePublishCustomJson = () => {
+    if (!socket || !selectedDeviceName) return;
+    try {
+      const parsed = JSON.parse(customJsonStr);
+      setCustomJsonError(null);
+      socket.emit('publish_telemetry', {
+        thingName: selectedDeviceName,
+        data: parsed
+      });
+      addSystemLog(selectedDeviceName, 'info', 'Injected freeform custom JSON telemetry payload.');
+    } catch (err: any) {
+      setCustomJsonError('Invalid JSON syntax: ' + err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0f19] text-[#f1f5f9] flex flex-col">
       {/* Header */}
@@ -651,13 +677,92 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
                 
-                {/* Sliders Area */}
-                <div className="space-y-6">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Modulate Metrics</h3>
-                  
-                  {activeDevice.deviceType === 'pump' && (
+                {/* Mode Switcher */}
+                <div className="flex bg-[#0b0f19] p-1 rounded-xl border border-[#1e293b]">
+                  <button
+                    type="button"
+                    onClick={() => setSimMode('sliders')}
+                    className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                      simMode === 'sliders'
+                        ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5" /> Hardware Profile Presets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimMode('freeform')}
+                    className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                      simMode === 'freeform'
+                        ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Code className="w-3.5 h-3.5" /> Freeform Custom JSON (Device-Agnostic)
+                  </button>
+                </div>
+
+                {/* MODE A: Freeform Custom JSON Editor */}
+                {simMode === 'freeform' && (
+                  <div className="bg-[#0b0f19] border border-slate-800/90 rounded-xl p-5 space-y-4 font-mono text-xs">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <label className="block text-[11px] text-cyan-400 font-bold uppercase tracking-wider">
+                          Arbitrary Telemetry Payload Editor
+                        </label>
+                        <p className="text-[9px] text-slate-400 mt-0.5">
+                          Type or paste any custom JSON payload. The system will auto-discover and map all fields dynamically.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(customJsonStr);
+                          setIsCopied(true);
+                          setTimeout(() => setIsCopied(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#0f172a] border border-slate-700 text-[10px] text-cyan-400 hover:text-white transition-all font-bold"
+                      >
+                        {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {isCopied ? 'Copied' : 'Copy Sample'}
+                      </button>
+                    </div>
+
+                    <textarea
+                      rows={9}
+                      value={customJsonStr}
+                      onChange={(e) => {
+                        setCustomJsonStr(e.target.value);
+                        setCustomJsonError(null);
+                      }}
+                      className="w-full bg-[#070b14] border border-[#334155] rounded-xl p-4 text-emerald-400 font-mono text-xs focus:outline-none focus:border-cyan-500 leading-relaxed shadow-inner"
+                      placeholder='{"s1": 42.5, "temp_c": 32.5, "batt_v": 3.8, "status": "optimal"}'
+                    />
+
+                    {customJsonError && (
+                      <div className="text-rose-400 text-[10px] bg-rose-950/40 p-2.5 rounded-lg border border-rose-500/30 font-sans">
+                        ⚠️ {customJsonError}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handlePublishCustomJson}
+                      className="w-full py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-xs"
+                    >
+                      <Play className="w-4 h-4" /> Inject Freeform Payload Message over mTLS
+                    </button>
+                  </div>
+                )}
+
+                {/* MODE B: Sliders Area */}
+                {simMode === 'sliders' && (
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      {activeDevice.deviceType === 'pump' && (
                     <div className="space-y-5">
                       {/* Flow Rate */}
                       <div className="bg-[#0b0f19] p-4 rounded-lg border border-[#1e293b]">
@@ -959,10 +1064,11 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-
               </div>
             )}
           </div>
+        )}
+      </div>
 
           {/* Logs Terminal */}
           <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-5 shadow-xl h-[280px] flex flex-col">
