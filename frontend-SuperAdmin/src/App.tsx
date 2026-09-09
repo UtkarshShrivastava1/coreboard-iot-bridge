@@ -23,7 +23,9 @@ import {
   Copy,
   Check,
   Search,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -101,6 +103,7 @@ export default function App() {
   // Direct Provisioning & Tenants List State
   const [tenants, setTenants] = useState<{ tenantId: string; companyName: string; adminEmail: string }[]>([]);
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
+  const [expandedTenantId, setExpandedTenantId] = useState<string | null>(null);
   const [loadingTenants, setLoadingTenants] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState('');
   const [directDeviceId, setDirectDeviceId] = useState('');
@@ -1053,11 +1056,12 @@ export default function App() {
                       <table className="w-full text-left font-sans text-xs">
                         <thead>
                           <tr className="bg-[#C8DFDB]/30 border-b border-[#C8DFDB] text-slate-700 uppercase text-[10px] font-bold tracking-wider">
+                            <th className="p-3 w-8 text-center"></th>
                             <th className="p-3">Company / Organization</th>
                             <th className="p-3">Partition / Domain ID</th>
                             <th className="p-3">Admin Email</th>
                             <th className="p-3">Status</th>
-                            <th className="p-3 text-right">Action</th>
+                            <th className="p-3 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#C8DFDB]/40 bg-white">
@@ -1071,53 +1075,143 @@ export default function App() {
                                 (t.adminEmail && t.adminEmail.toLowerCase().includes(q))
                               );
                             })
-                            .map((t) => (
-                              <tr key={t.tenantId} className="hover:bg-[#F2EFE7]/60 transition-colors">
-                                <td className="p-3 font-bold text-slate-900">{t.companyName}</td>
-                                <td className="p-3">
-                                  <button
-                                    onClick={() => handleCopyDomain(t.tenantId)}
-                                    title="Click to copy Tenant Domain ID"
-                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#C8DFDB]/40 hover:bg-[#C8DFDB]/80 border border-[#66A3BF]/40 text-[#3368A0] font-mono text-xs font-bold transition-all group cursor-pointer"
-                                  >
-                                    <span className="break-all">TENANT#{t.tenantId}</span>
-                                    {copiedDomain === t.tenantId ? (
-                                      <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                                    ) : (
-                                      <Copy className="w-3 h-3 text-[#66A3BF] group-hover:text-[#3368A0] shrink-0" />
-                                    )}
-                                  </button>
-                                </td>
-                                <td className="p-3 text-slate-600 font-medium">{t.adminEmail}</td>
-                                <td className="p-3">
-                                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
-                                    ACTIVE
-                                  </span>
-                                </td>
-                                <td className="p-3 text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <button
-                                      onClick={() => {
-                                        setActiveTab('tenant_profiles');
-                                        fetchTenantDevices(t.tenantId);
-                                      }}
-                                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#C8DFDB]/30 border border-[#C8DFDB] text-[#3368A0] text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1 cursor-pointer"
-                                    >
-                                      <span>Devices</span>
-                                      <ChevronRight className="w-3.5 h-3.5 text-[#3368A0]" />
-                                    </button>
+                            .map((t) => {
+                              const isExpanded = expandedTenantId === t.tenantId;
+                              return (
+                                <React.Fragment key={t.tenantId}>
+                                  <tr className={`hover:bg-[#F2EFE7]/60 transition-colors ${isExpanded ? 'bg-[#F2EFE7]/40' : ''}`}>
+                                    {/* Expand Toggle */}
+                                    <td className="p-3 text-center">
+                                      <button
+                                        onClick={() => setExpandedTenantId(isExpanded ? null : t.tenantId)}
+                                        title={isExpanded ? "Collapse Details" : "Expand Details"}
+                                        className="p-1 rounded-md text-slate-500 hover:text-[#3368A0] hover:bg-[#C8DFDB]/40 transition-all cursor-pointer"
+                                      >
+                                        {isExpanded ? <ChevronUp className="w-4 h-4 text-[#3368A0]" /> : <ChevronDown className="w-4 h-4" />}
+                                      </button>
+                                    </td>
 
-                                    <button
-                                      onClick={() => handleDeleteTenant(t.tenantId, t.companyName)}
-                                      title={`Permanently Delete Tenant ${t.companyName} (${t.tenantId})`}
-                                      className="p-1.5 rounded-lg bg-white hover:bg-rose-50 border border-[#C8DFDB] hover:border-rose-300 text-slate-500 hover:text-rose-600 transition-all shadow-xs shrink-0 cursor-pointer"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-rose-500" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
+                                    {/* Company Name */}
+                                    <td className="p-3 font-bold text-slate-900 whitespace-nowrap truncate max-w-[140px]">{t.companyName}</td>
+
+                                    {/* Single-line Compact Tenant Domain ID */}
+                                    <td className="p-3 whitespace-nowrap">
+                                      <button
+                                        onClick={() => handleCopyDomain(t.tenantId)}
+                                        title="Click to copy Tenant Domain ID"
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#C8DFDB]/40 hover:bg-[#C8DFDB]/80 border border-[#66A3BF]/40 text-[#3368A0] font-mono text-xs font-bold transition-all max-w-[170px] whitespace-nowrap truncate group cursor-pointer"
+                                      >
+                                        <span className="truncate">TENANT#{t.tenantId}</span>
+                                        {copiedDomain === t.tenantId ? (
+                                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                        ) : (
+                                          <Copy className="w-3.5 h-3.5 text-[#66A3BF] group-hover:text-[#3368A0] shrink-0" />
+                                        )}
+                                      </button>
+                                    </td>
+
+                                    {/* Admin Email */}
+                                    <td className="p-3 text-slate-600 font-medium whitespace-nowrap truncate max-w-[160px]">{t.adminEmail}</td>
+
+                                    {/* Status */}
+                                    <td className="p-3 whitespace-nowrap">
+                                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
+                                        ACTIVE
+                                      </span>
+                                    </td>
+
+                                    {/* Quick Actions */}
+                                    <td className="p-3 text-right whitespace-nowrap">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setActiveTab('tenant_profiles');
+                                            fetchTenantDevices(t.tenantId);
+                                          }}
+                                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#C8DFDB]/30 border border-[#C8DFDB] text-[#3368A0] text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <span>Devices</span>
+                                          <ChevronRight className="w-3.5 h-3.5 text-[#3368A0]" />
+                                        </button>
+
+                                        <button
+                                          onClick={() => handleDeleteTenant(t.tenantId, t.companyName)}
+                                          title={`Permanently Delete Tenant ${t.companyName} (${t.tenantId})`}
+                                          className="p-1.5 rounded-lg bg-white hover:bg-rose-50 border border-[#C8DFDB] hover:border-rose-300 text-slate-500 hover:text-rose-600 transition-all shadow-xs shrink-0 cursor-pointer"
+                                        >
+                                          <Trash2 className="w-4 h-4 text-rose-500" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+
+                                  {/* Expandable Tenant Details Drawer */}
+                                  {isExpanded && (
+                                    <tr className="bg-[#F2EFE7]/50 border-b border-[#C8DFDB]">
+                                      <td colSpan={6} className="p-4 font-sans">
+                                        <div className="bg-white border border-[#C8DFDB] rounded-xl p-4 shadow-xs space-y-3">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Full Tenant Metadata Drawer</span>
+                                            <span className="px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                                              Partition Status: ACTIVE
+                                            </span>
+                                          </div>
+
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                            <div>
+                                              <span className="text-slate-500 uppercase text-[10px] font-bold block mb-1">Full Tenant Domain / Partition ID</span>
+                                              <button
+                                                onClick={() => handleCopyDomain(t.tenantId)}
+                                                className="w-full flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[#F2EFE7]/80 hover:bg-[#C8DFDB]/40 border border-[#C8DFDB] text-[#3368A0] font-bold text-xs transition-all text-left cursor-pointer group"
+                                              >
+                                                <span className="break-all font-mono font-bold">TENANT#{t.tenantId}</span>
+                                                {copiedDomain === t.tenantId ? (
+                                                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                                ) : (
+                                                  <Copy className="w-4 h-4 text-[#66A3BF] group-hover:text-[#3368A0] shrink-0" />
+                                                )}
+                                              </button>
+                                            </div>
+
+                                            <div>
+                                              <span className="text-slate-500 uppercase text-[10px] font-bold block mb-1">Tenant Administrator Contact</span>
+                                              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-sans font-semibold">
+                                                {t.adminEmail}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="pt-2 border-t border-[#C8DFDB] flex items-center justify-between">
+                                            <span className="text-xs font-medium text-slate-500 font-sans">
+                                              Organization: <strong className="text-slate-900">{t.companyName}</strong>
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                              <button
+                                                onClick={() => {
+                                                  setActiveTab('tenant_profiles');
+                                                  fetchTenantDevices(t.tenantId);
+                                                }}
+                                                className="px-3 py-1.5 rounded-lg bg-[#3368A0] hover:bg-[#285382] text-white text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer font-sans"
+                                              >
+                                                <Cpu className="w-3.5 h-3.5" />
+                                                <span>Inspect Devices</span>
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteTenant(t.tenantId, t.companyName)}
+                                                className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer font-sans"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                                <span>Delete Tenant</span>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
                         </tbody>
                       </table>
                     </div>
