@@ -1697,42 +1697,101 @@ export default function App() {
                                         <span className="text-cyan-400">Universal Actuation & Sensor Dashboard</span>
                                       </div>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {Object.entries(telemetry)
-                                          .filter(([key]) => !['device_id', 'device_type', 'timestamp', 'status', 'tenant_id'].includes(key))
-                                          .map(([key, value]) => {
+                                        {(() => {
+                                          const payloadKeys = Object.entries(telemetry)
+                                            .filter(([key]) => !['device_id', 'device_type', 'timestamp', 'status', 'tenant_id'].includes(key));
+
+                                          if (payloadKeys.length === 0) {
+                                            const devMappings = widgetMappingsMap[activeDevice.device_id] || [];
+                                            return (
+                                              <div className="col-span-full p-6 border border-dashed border-slate-800/80 rounded-xl text-center bg-slate-950/40">
+                                                <p className="text-xs text-cyan-400 font-bold mb-1 flex items-center justify-center gap-2">
+                                                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                                  Awaiting Live Telemetry Stream for {activeDevice.device_id}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500">
+                                                  {devMappings.length > 0 
+                                                    ? `Configured mapped fields: [${devMappings.map(m => m.keyName).join(', ')}]. Connect your simulator or device to start streaming live values.`
+                                                    : 'No payload received yet. Connect your device or simulator to start streaming data.'}
+                                                </p>
+                                              </div>
+                                            );
+                                          }
+
+                                          return payloadKeys.map(([key, value]) => {
+                                            const mapping = (widgetMappingsMap[activeDevice.device_id] || []).find(m => m.keyName === key);
+                                            const displayLabel = mapping?.customLabel || key.replace(/_/g, ' ');
+                                            const unitSuffix = mapping?.unit ? ` ${mapping.unit}` : '';
+                                            const warnThreshold = mapping?.warnThreshold;
+                                            const minVal = mapping?.minVal ?? 0;
+                                            const maxVal = mapping?.maxVal ?? 100;
+                                            const numVal = typeof value === 'number' ? value : Number(value) || 0;
+                                            const isWarning = warnThreshold !== undefined && warnThreshold !== null && numVal >= warnThreshold;
+
                                             const isBoolean = typeof value === 'boolean' || value === 'true' || value === 'false';
                                             const boolVal = typeof value === 'boolean' ? value : value === 'true';
 
-                                            if (isBoolean) {
+                                            // Gauge Widget
+                                            if (mapping?.widgetType === 'gauge' && typeof value === 'number') {
+                                              const percent = Math.min(100, Math.max(0, ((numVal - minVal) / (maxVal - minVal)) * 100));
                                               return (
-                                                <div key={key} className="bg-slate-950/60 border border-slate-850 p-4 rounded-xl font-mono flex items-center justify-between transition-all hover:border-slate-700">
-                                                  <div>
-                                                    <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{key.replace(/_/g, ' ')}</div>
-                                                    <div className={`text-xs font-bold mt-1 ${boolVal ? 'text-cyan-400' : 'text-slate-400'}`}>
-                                                      {boolVal ? 'ACTIVE / ON' : 'INACTIVE / OFF'}
+                                                <div key={key} className={`bg-slate-950/60 border ${isWarning ? 'border-rose-500/50 bg-rose-950/10' : 'border-slate-850'} p-4 rounded-xl font-mono transition-all hover:border-cyan-500/40 col-span-full sm:col-span-1`}>
+                                                  <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">
+                                                    <span>{displayLabel}</span>
+                                                    <span className="text-cyan-400 text-2xs font-normal">GAUGE METER</span>
+                                                  </div>
+                                                  <div className={`text-xl font-bold orbitron mt-1 ${isWarning ? 'text-rose-400 animate-pulse' : 'text-slate-100'}`}>
+                                                    {numVal.toFixed(2)}<span className="text-xs text-slate-500 font-mono font-normal">{unitSuffix}</span>
+                                                  </div>
+                                                  <div className="mt-3">
+                                                    <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                                                      <span>Scale ({minVal} - {maxVal})</span>
+                                                      <span>{percent.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-slate-900 rounded-full border border-slate-800 overflow-hidden">
+                                                      <div 
+                                                        className={`h-full transition-all duration-700 ease-out ${isWarning ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-gradient-to-r from-cyan-600 to-cyan-400'}`}
+                                                        style={{ width: `${percent}%` }}
+                                                      ></div>
                                                     </div>
                                                   </div>
-
-                                                  {/* Toggle Switch */}
-                                                  <button
-                                                    onClick={() => handleActuateDevice(activeDevice.device_id, key, !boolVal)}
-                                                    className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 focus:outline-none ${boolVal ? 'bg-cyan-500 justify-end' : 'bg-slate-800 justify-start'}`}
-                                                  >
-                                                    <span className="w-5 h-5 rounded-full bg-slate-950 shadow-md transform transition-transform duration-300"></span>
-                                                  </button>
                                                 </div>
                                               );
                                             }
 
-                                            return (
-                                              <div key={key} className="bg-slate-950/60 border border-slate-850 p-4 rounded-xl font-mono transition-all hover:border-slate-700">
-                                                <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{key.replace(/_/g, ' ')}</div>
-                                                <div className="text-lg font-bold text-slate-200 mt-1.5 orbitron">
-                                                  {typeof value === 'number' ? value.toFixed(2) : String(value)}
+                                            // Stat Card Widget
+                                            if (mapping?.widgetType === 'stat' || (!mapping && !isBoolean)) {
+                                              return (
+                                                <div key={key} className={`bg-slate-950/60 border ${isWarning ? 'border-rose-500/50 bg-rose-950/10' : 'border-slate-850'} p-4 rounded-xl font-mono transition-all hover:border-slate-700`}>
+                                                  <div className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{displayLabel}</div>
+                                                  <div className={`text-xl font-bold mt-1.5 orbitron ${isWarning ? 'text-rose-400 animate-pulse' : 'text-slate-100'}`}>
+                                                    {typeof value === 'number' ? value.toFixed(2) : String(value)}
+                                                    <span className="text-xs text-slate-500 font-mono font-normal ml-1">{unitSuffix}</span>
+                                                  </div>
                                                 </div>
+                                              );
+                                            }
+
+                                            // Status / Toggle Switch Widget
+                                            return (
+                                              <div key={key} className="bg-slate-950/60 border border-slate-850 p-4 rounded-xl font-mono flex items-center justify-between transition-all hover:border-slate-700">
+                                                <div>
+                                                  <div className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{displayLabel}</div>
+                                                  <div className={`text-xs font-bold mt-1 ${boolVal ? 'text-cyan-400' : 'text-slate-400'}`}>
+                                                    {boolVal ? 'ACTIVE / ON' : 'INACTIVE / OFF'}
+                                                  </div>
+                                                </div>
+
+                                                <button
+                                                  onClick={() => handleActuateDevice(activeDevice.device_id, key, !boolVal)}
+                                                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 focus:outline-none ${boolVal ? 'bg-cyan-500 justify-end' : 'bg-slate-800 justify-start'}`}
+                                                >
+                                                  <span className="w-5 h-5 rounded-full bg-slate-950 shadow-md transform transition-transform duration-300"></span>
+                                                </button>
                                               </div>
                                             );
-                                          })}
+                                          });
+                                        })()}
                                       </div>
                                     </div>
                                   )}
