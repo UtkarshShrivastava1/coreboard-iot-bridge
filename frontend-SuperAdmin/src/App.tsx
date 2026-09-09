@@ -1168,210 +1168,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* ONBOARD NEW TENANT CLIENT MODAL DIALOG */}
-              {isOnboardModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-md w-full relative animate-in fade-in zoom-in-95 duration-150">
 
-                    {/* Modal Header */}
-                    <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
-                          <Building2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Onboard New Tenant Client</h3>
-                          <p className="text-[10px] font-mono text-slate-500 mt-0.5">Provision isolated tenant partition & credentials.</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setIsOnboardModalOpen(false)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {/* Alert Banners */}
-                    {onboardError && (
-                      <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
-                        <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
-                        <span>{onboardError}</span>
-                      </div>
-                    )}
-
-                    {onboardSuccess && (
-                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                        <span>{onboardSuccess}</span>
-                      </div>
-                    )}
-
-                    {/* Onboarding Form */}
-                    <form onSubmit={handleOnboardTenant} className="space-y-4 text-xs font-sans">
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Company / Organization Name</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Acme Industrial Corp"
-                          value={superadminCompanyName}
-                          onChange={(e) => setSuperadminCompanyName(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Tenant Domain ID (Partition Key)</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. acme-industrial"
-                          value={superadminTenantId}
-                          onChange={(e) => setSuperadminTenantId(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Tenant Admin Email</label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="admin@acme.com"
-                          value={superadminEmail}
-                          onChange={(e) => setSuperadminEmail(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Initial Admin Password</label>
-                        <input
-                          type="password"
-                          required
-                          placeholder="••••••••••••"
-                          value={superadminPassword}
-                          onChange={(e) => setSuperadminPassword(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-                        <button
-                          type="button"
-                          onClick={() => setIsOnboardModalOpen(false)}
-                          className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-5 py-2.5 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <Building2 className="w-4 h-4" />
-                          Onboard Tenant Account
-                        </button>
-                      </div>
-                    </form>
-
-                  </div>
-                </div>
-              )}
-
-              {/* CUSTOM PERMANENT TENANT DELETION CONFIRMATION MODAL */}
-              {deleteTargetTenant && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
-                  <div className="bg-white border border-rose-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-150">
-
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-rose-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 text-rose-700 flex items-center justify-center shrink-0">
-                          <ShieldAlert className="w-5 h-5 text-rose-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Permanent Deletion Warning</h3>
-                          <p className="text-[10px] font-mono text-rose-600 font-semibold mt-0.5">Destructive System Action</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setDeleteTargetTenant(null)}
-                        disabled={isDeletingTenant}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {/* Error Banner if any */}
-                    {deleteModalError && (
-                      <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 text-xs font-semibold">
-                        <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
-                        <span>{deleteModalError}</span>
-                      </div>
-                    )}
-
-                    {/* Main Warning Body */}
-                    <div className="space-y-4 text-xs">
-                      <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-4 text-rose-900 space-y-2">
-                        <p className="font-bold text-sm">
-                          Are you sure you want to delete <span className="underline decoration-rose-400 decoration-2">{deleteTargetTenant.companyName}</span>?
-                        </p>
-                        <p className="text-xs text-rose-700 font-medium">
-                          Target Partition Key: <strong className="font-mono bg-rose-100 px-2 py-0.5 rounded text-rose-900">TENANT#{deleteTargetTenant.tenantId}</strong>
-                        </p>
-                      </div>
-
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-slate-700">
-                        <p className="font-bold uppercase text-[10px] tracking-wider text-slate-500">Executing this action will permanently purge:</p>
-                        <ul className="space-y-1.5 text-xs text-slate-700 font-medium list-disc list-inside">
-                          <li>All DynamoDB partition items (<code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">METADATA</code>, <code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">USER#*</code>, <code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">DEVICE#*</code>, <code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">ALARM#*</code>).</li>
-                          <li>All registered AWS IoT Core X.509 Cryptographic Certificates & Thing resources.</li>
-                          <li>Active WebSocket live telemetry data streams.</li>
-                        </ul>
-                      </div>
-
-                      <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-[11px] font-semibold flex items-center gap-2">
-                        <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
-                        <span>This action is immediate and non-reversible. Data cannot be recovered.</span>
-                      </div>
-                    </div>
-
-                    {/* Modal Footer Buttons */}
-                    <div className="flex items-center justify-end gap-3 pt-4 mt-5 border-t border-slate-200">
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTargetTenant(null)}
-                        disabled={isDeletingTenant}
-                        className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 text-xs"
-                      >
-                        Cancel
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={confirmPermanentDelete}
-                        disabled={isDeletingTenant}
-                        className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
-                      >
-                        {isDeletingTenant ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                            <span>Deleting Tenant...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4 text-white" />
-                            <span>Permanently Delete Tenant</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-              )}
 
             </div>
           )}
@@ -1605,177 +1402,383 @@ export default function App() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
 
-              {/* ADD NEW DEVICE PROVISIONING MODAL DIALOG */}
-              {isAddDeviceModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-150">
-                    
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
-                          <PlusCircle className="w-5 h-5 text-[#3368A0]" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Add New Device (Provisioning)</h3>
-                          <p className="text-[10px] font-mono text-slate-500 mt-0.5">Provision X.509 certificates & Thing slots in AWS IoT Core.</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setIsAddDeviceModalOpen(false)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+          {/* GLOBAL SYSTEM MODALS */}
+
+          {/* ONBOARD NEW TENANT CLIENT MODAL DIALOG */}
+          {isOnboardModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-md w-full relative animate-in fade-in zoom-in-95 duration-150">
+
+                {/* Modal Header */}
+                <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5" />
                     </div>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Onboard New Tenant Client</h3>
+                      <p className="text-[10px] font-mono text-slate-500 mt-0.5">Provision isolated tenant partition & credentials.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsOnboardModalOpen(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-                    {/* Alert Banners */}
-                    {directError && (
-                      <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
-                        <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
-                        <span>{directError}</span>
-                      </div>
-                    )}
+                {/* Alert Banners */}
+                {onboardError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>{onboardError}</span>
+                  </div>
+                )}
 
-                    {directSuccess && (
-                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                        <span>{directSuccess}</span>
-                      </div>
-                    )}
+                {onboardSuccess && (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <span>{onboardSuccess}</span>
+                  </div>
+                )}
 
-                    {/* Device Provisioning Form */}
-                    <form onSubmit={handleDirectProvision} className="space-y-4 text-xs font-sans">
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Target Tenant Partition</label>
-                        {loadingTenants ? (
-                          <div className="text-slate-500 text-xs font-mono">Loading tenants list...</div>
-                        ) : tenants.length === 0 ? (
-                          <div className="text-rose-600 text-xs font-mono">No onboarded tenants available. Please onboard a tenant first.</div>
-                        ) : (
-                          <select
-                            value={selectedTenantId}
-                            onChange={(e) => setSelectedTenantId(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
-                          >
-                            {tenants.map(t => (
-                              <option key={t.tenantId} value={t.tenantId}>
-                                {t.companyName} ({t.tenantId})
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
+                {/* Onboarding Form */}
+                <form onSubmit={handleOnboardTenant} className="space-y-4 text-xs font-sans">
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Company / Organization Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Acme Industrial Corp"
+                      value={superadminCompanyName}
+                      onChange={(e) => setSuperadminCompanyName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
+                    />
+                  </div>
 
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Unique Device ID / Thing Name</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. SMART-LOCK-101"
-                          value={directDeviceId}
-                          onChange={(e) => setDirectDeviceId(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold font-mono"
-                        />
-                      </div>
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Tenant Domain ID (Partition Key)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. acme-industrial"
+                      value={superadminTenantId}
+                      onChange={(e) => setSuperadminTenantId(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
+                    />
+                  </div>
 
-                      <div>
-                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Device Profile Type (Free-Text / Custom)</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Locking System, Solar Inverter, Pump..."
-                          value={directDeviceType}
-                          onChange={(e) => setDirectDeviceType(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold mb-2"
-                        />
-                        <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
-                          <span className="text-slate-500 self-center">Presets:</span>
-                          {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => setDirectDeviceType(preset)}
-                              className={`px-2 py-0.5 rounded border transition-all ${directDeviceType === preset
-                                ? 'bg-[#3368A0] border-[#3368A0] text-white font-bold'
-                                : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
-                                }`}
-                            >
-                              {preset}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Tenant Admin Email</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="admin@acme.com"
+                      value={superadminEmail}
+                      onChange={(e) => setSuperadminEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
+                    />
+                  </div>
 
-                      {/* Download Credentials Box Inside Modal */}
-                      {credentials && (
-                        <div className="bg-cyan-50/90 border border-cyan-300 rounded-xl p-4 space-y-2 animate-in fade-in">
-                          <h4 className="text-xs font-bold text-cyan-900 flex items-center gap-2 uppercase tracking-wide font-mono">
-                            <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse"></span>
-                            mTLS Credentials Package Ready
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px] font-mono">
-                            <button
-                              type="button"
-                              onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
-                              className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
-                            >
-                              <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> Cert</span>
-                              <span className="text-[8px] text-slate-400">.crt</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
-                              className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
-                            >
-                              <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> Key</span>
-                              <span className="text-[8px] text-slate-400">.key</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => downloadCredentialFile(credentials.rootCaPem || DEFAULT_AMAZON_ROOT_CA_PEM, `AmazonRootCA1.pem`)}
-                              className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
-                            >
-                              <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> CA</span>
-                              <span className="text-[8px] text-slate-400">.pem</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Initial Admin Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••••••"
+                      value={superadminPassword}
+                      onChange={(e) => setSuperadminPassword(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
+                    />
+                  </div>
 
-                      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-                        <button
-                          type="button"
-                          onClick={() => setIsAddDeviceModalOpen(false)}
-                          className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer text-xs"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isProvisioning || tenants.length === 0}
-                          className="px-5 py-2.5 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
-                        >
-                          {isProvisioning ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                              <span>Provisioning...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Database className="w-4 h-4 text-white" />
-                              <span>Directly Provision Device</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setIsOnboardModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      Onboard Tenant Account
+                    </button>
+                  </div>
+                </form>
 
+              </div>
+            </div>
+          )}
+
+          {/* CUSTOM PERMANENT TENANT DELETION CONFIRMATION MODAL */}
+          {deleteTargetTenant && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+              <div className="bg-white border border-rose-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-150">
+
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-rose-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 text-rose-700 flex items-center justify-center shrink-0">
+                      <ShieldAlert className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Permanent Deletion Warning</h3>
+                      <p className="text-[10px] font-mono text-rose-600 font-semibold mt-0.5">Destructive System Action</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDeleteTargetTenant(null)}
+                    disabled={isDeletingTenant}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Error Banner if any */}
+                {deleteModalError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 text-xs font-semibold">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>{deleteModalError}</span>
+                  </div>
+                )}
+
+                {/* Main Warning Body */}
+                <div className="space-y-4 text-xs">
+                  <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-4 text-rose-900 space-y-2">
+                    <p className="font-bold text-sm">
+                      Are you sure you want to delete <span className="underline decoration-rose-400 decoration-2">{deleteTargetTenant.companyName}</span>?
+                    </p>
+                    <p className="text-xs text-rose-700 font-medium">
+                      Target Partition Key: <strong className="font-mono bg-rose-100 px-2 py-0.5 rounded text-rose-900">TENANT#{deleteTargetTenant.tenantId}</strong>
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-slate-700">
+                    <p className="font-bold uppercase text-[10px] tracking-wider text-slate-500">Executing this action will permanently purge:</p>
+                    <ul className="space-y-1.5 text-xs text-slate-700 font-medium list-disc list-inside">
+                      <li>All DynamoDB partition items (<code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">METADATA</code>, <code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">USER#*</code>, <code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">DEVICE#*</code>, <code className="font-mono text-[11px] bg-slate-200/70 px-1 rounded">ALARM#*</code>).</li>
+                      <li>All registered AWS IoT Core X.509 Cryptographic Certificates & Thing resources.</li>
+                      <li>Active WebSocket live telemetry data streams.</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-[11px] font-semibold flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>This action is immediate and non-reversible. Data cannot be recovered.</span>
                   </div>
                 </div>
-              )}
 
+                {/* Modal Footer Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 mt-5 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTargetTenant(null)}
+                    disabled={isDeletingTenant}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50 text-xs"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={confirmPermanentDelete}
+                    disabled={isDeletingTenant}
+                    className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
+                  >
+                    {isDeletingTenant ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        <span>Deleting Tenant...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 text-white" />
+                        <span>Permanently Delete Tenant</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ADD NEW DEVICE PROVISIONING MODAL DIALOG */}
+          {isAddDeviceModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-150">
+                
+                {/* Header */}
+                <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
+                      <PlusCircle className="w-5 h-5 text-[#3368A0]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Add New Device (Provisioning)</h3>
+                      <p className="text-[10px] font-mono text-slate-500 mt-0.5">Provision X.509 certificates & Thing slots in AWS IoT Core.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsAddDeviceModalOpen(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Alert Banners */}
+                {directError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>{directError}</span>
+                  </div>
+                )}
+
+                {directSuccess && (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <span>{directSuccess}</span>
+                  </div>
+                )}
+
+                {/* Device Provisioning Form */}
+                <form onSubmit={handleDirectProvision} className="space-y-4 text-xs font-sans">
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Target Tenant Partition</label>
+                    {loadingTenants ? (
+                      <div className="text-slate-500 text-xs font-mono">Loading tenants list...</div>
+                    ) : tenants.length === 0 ? (
+                      <div className="text-rose-600 text-xs font-mono">No onboarded tenants available. Please onboard a tenant first.</div>
+                    ) : (
+                      <select
+                        value={selectedTenantId}
+                        onChange={(e) => setSelectedTenantId(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
+                      >
+                        {tenants.map(t => (
+                          <option key={t.tenantId} value={t.tenantId}>
+                            {t.companyName} ({t.tenantId})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Unique Device ID / Thing Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. SMART-LOCK-101"
+                      value={directDeviceId}
+                      onChange={(e) => setDirectDeviceId(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Device Profile Type (Free-Text / Custom)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Locking System, Solar Inverter, Pump..."
+                      value={directDeviceType}
+                      onChange={(e) => setDirectDeviceType(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold mb-2"
+                    />
+                    <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
+                      <span className="text-slate-500 self-center">Presets:</span>
+                      {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setDirectDeviceType(preset)}
+                          className={`px-2 py-0.5 rounded border transition-all ${directDeviceType === preset
+                            ? 'bg-[#3368A0] border-[#3368A0] text-white font-bold'
+                            : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                            }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Download Credentials Box Inside Modal */}
+                  {credentials && (
+                    <div className="bg-cyan-50/90 border border-cyan-300 rounded-xl p-4 space-y-2 animate-in fade-in">
+                      <h4 className="text-xs font-bold text-cyan-900 flex items-center gap-2 uppercase tracking-wide font-mono">
+                        <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse"></span>
+                        mTLS Credentials Package Ready
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px] font-mono">
+                        <button
+                          type="button"
+                          onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
+                          className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
+                        >
+                          <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> Cert</span>
+                          <span className="text-[8px] text-slate-400">.crt</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
+                          className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
+                        >
+                          <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> Key</span>
+                          <span className="text-[8px] text-slate-400">.key</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadCredentialFile(credentials.rootCaPem || DEFAULT_AMAZON_ROOT_CA_PEM, `AmazonRootCA1.pem`)}
+                          className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
+                        >
+                          <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> CA</span>
+                          <span className="text-[8px] text-slate-400">.pem</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddDeviceModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer text-xs"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isProvisioning || tenants.length === 0}
+                      className="px-5 py-2.5 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
+                    >
+                      {isProvisioning ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                          <span>Provisioning...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4 text-white" />
+                          <span>Directly Provision Device</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+              </div>
             </div>
           )}
 
