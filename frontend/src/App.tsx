@@ -711,16 +711,6 @@ export default function App() {
     }
   };
 
-  const getDeviceColor = (type: string) => {
-    switch (type) {
-      case 'pump': return 'cyan';
-      case 'temp_sensor': return 'amber';
-      case 'pressure_sensor': return 'rose';
-      case 'power_meter': return 'emerald';
-      default: return 'indigo';
-    }
-  };
-
   // Filtered alarms computation
   const filteredAlarms = alarms.filter(a => {
     if (alarmFilter === 'ALL') return true;
@@ -1016,132 +1006,204 @@ export default function App() {
 
       {/* SCREEN 2: AUTHENTICATED OPERATOR DASHBOARD */}
       {currentScreen === 'dashboard' && tenant && (
-        <div className="min-h-screen flex flex-col md:flex-row relative bg-[#f8fafc]">
+        <div className="min-h-screen flex bg-[#f8fafc] text-slate-900 font-sans overflow-x-hidden">
 
           {/* Sidebar Navigation */}
-          <aside className={`bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shrink-0 z-40 shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'
-            }`}>
-            {/* Header branding in sidebar */}
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold text-white orbitron shrink-0 shadow-sm">
-                  CB
-                </div>
-                {sidebarOpen && (
-                  <div className="font-bold text-slate-900 text-xs tracking-wider leading-none uppercase">
-                    COREBOARD
+          <aside 
+            className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 flex flex-col justify-between shadow-sm ${
+              sidebarOpen ? 'w-64' : 'w-20'
+            }`}
+          >
+            <div>
+              {/* Brand Header */}
+              <div className="h-16 px-5 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20">
+                    <Building2 className="w-5 h-5 text-white" />
                   </div>
-                )}
+                  {sidebarOpen && (
+                    <div className="flex flex-col truncate">
+                      <span className="text-sm font-bold text-slate-900 tracking-wide uppercase">COREBOARD</span>
+                      <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
+                        tenant.role === 'ADMIN' ? 'text-indigo-600' : 'text-emerald-600'
+                      }`}>
+                        {tenant.role === 'ADMIN' ? 'TENANT ADMIN' : 'TENANT USER'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                <button 
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
+                >
+                  <Menu className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-slate-500 hover:text-slate-900 transition-all bg-slate-100 p-1 rounded border border-slate-200 hidden md:block"
-              >
-                {sidebarOpen ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
-              </button>
+
+              {/* System Health Status Badge */}
+              {sidebarOpen && (
+                <div className="mx-4 my-4 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-[10px] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 uppercase tracking-wider font-semibold">Gateway Tunnel</span>
+                    {isConnected ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Connected
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-rose-700 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        Offline
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 uppercase tracking-wider font-semibold">Tenant Domain</span>
+                    <span className="text-indigo-600 font-bold truncate max-w-[100px]">{tenant.tenantId}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Links */}
+              <nav className="px-3 py-2 space-y-1.5 font-mono text-xs">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                    activeTab === 'overview'
+                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'overview' ? 'text-indigo-600' : ''}`} />
+                  {sidebarOpen && <span className="truncate">Overview Dashboard</span>}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('telemetry')}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                    activeTab === 'telemetry'
+                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <Activity className={`w-4 h-4 shrink-0 ${activeTab === 'telemetry' ? 'text-indigo-600' : ''}`} />
+                  {sidebarOpen && <span className="truncate">Telemetry Monitor</span>}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('devices')}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                    activeTab === 'devices'
+                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'devices' ? 'text-indigo-600' : ''}`} />
+                  {sidebarOpen && <span className="truncate">Device Registry</span>}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('alarms')}
+                  className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all relative ${
+                    activeTab === 'alarms'
+                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <Bell className={`w-4 h-4 shrink-0 ${activeTab === 'alarms' ? 'text-indigo-600' : ''}`} />
+                    {sidebarOpen && <span className="truncate">Alarms Console</span>}
+                  </div>
+                  {activeAlarmsCount > 0 && sidebarOpen && (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold shrink-0">
+                      {activeAlarmsCount}
+                    </span>
+                  )}
+                </button>
+
+                {tenant.role === 'ADMIN' && (
+                  <button
+                    onClick={() => setActiveTab('simulator')}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                      activeTab === 'simulator'
+                        ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Radio className={`w-4 h-4 shrink-0 ${activeTab === 'simulator' ? 'text-indigo-600' : ''}`} />
+                    {sidebarOpen && <span className="truncate">Testing Harness</span>}
+                  </button>
+                )}
+              </nav>
             </div>
 
-            {/* Nav Link Lists */}
-            <nav className="flex-1 px-4 py-6 space-y-2 font-mono text-xs">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'overview'
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                  }`}
-              >
-                <Building2 className="w-4 h-4 shrink-0" />
-                {sidebarOpen && <span>Overview Dashboard</span>}
-              </button>
+            {/* Profile Bar & Logout */}
+            <div className="p-4 border-t border-slate-200 font-mono">
+              {sidebarOpen ? (
+                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2.5 truncate">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                      tenant.role === 'ADMIN' 
+                        ? 'bg-indigo-100 border border-indigo-200 text-indigo-700' 
+                        : 'bg-emerald-100 border border-emerald-200 text-emerald-700'
+                    }`}>
+                      {tenant.role === 'ADMIN' ? 'TA' : 'TU'}
+                    </div>
+                    <div className="flex flex-col truncate">
+                      <span className="text-xs font-bold text-slate-900 truncate">{tenant.companyName}</span>
+                      <span className="text-[9px] text-slate-500 truncate">{tenant.email}</span>
+                    </div>
+                  </div>
 
-              <button
-                onClick={() => setActiveTab('telemetry')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'telemetry'
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                  }`}
-              >
-                <Activity className="w-4 h-4 shrink-0" />
-                {sidebarOpen && <span>Telemetry Monitor</span>}
-              </button>
-
-              <button
-                onClick={() => setActiveTab('devices')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'devices'
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                  }`}
-              >
-                <Cpu className="w-4 h-4 shrink-0" />
-                {sidebarOpen && <span>Device Registry</span>}
-              </button>
-
-              <button
-                onClick={() => setActiveTab('alarms')}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'alarms'
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Bell className="w-4 h-4 shrink-0" />
-                  {sidebarOpen && <span>Alarms Console</span>}
+                  <button
+                    onClick={handleLogout}
+                    title="Disconnect Session"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
                 </div>
-                {activeAlarmsCount > 0 && sidebarOpen && (
-                  <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold font-mono text-[9px] animate-pulse">
-                    {activeAlarmsCount}
-                  </span>
-                )}
-              </button>
-
-              {tenant.role === 'ADMIN' && (
+              ) : (
                 <button
-                  onClick={() => setActiveTab('simulator')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${activeTab === 'simulator'
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900/40 border border-transparent'
-                    }`}
+                  onClick={handleLogout}
+                  className="w-full p-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all flex items-center justify-center border border-slate-200"
                 >
-                  <Radio className="w-4 h-4 shrink-0" />
-                  {sidebarOpen && <span>Testing Harness</span>}
+                  <LogOut className="w-4 h-4" />
                 </button>
               )}
-            </nav>
-
-            {/* Logout panel */}
-            <div className="p-4 border-t border-slate-800">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-transparent rounded-xl font-mono text-xs font-semibold transition-all"
-              >
-                <LogOut className="w-4 h-4 shrink-0" />
-                {sidebarOpen && <span>Disconnect Node</span>}
-              </button>
             </div>
           </aside>
 
-          {/* Main Content Workspace */}
-          <div className="flex-1 flex flex-col min-w-0">
+          {/* Main Content Workspace Container */}
+          <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'} flex flex-col min-h-screen`}>
 
-            {/* Header */}
-            <header className="bg-[#0b101c] border-b border-slate-800/80 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+            {/* Top Header Command Bar */}
+            <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 flex items-center justify-between sticky top-0 z-30 font-sans">
               <div className="flex items-center gap-3">
-                <span className="text-slate-400 text-xs font-mono hidden md:inline">Current Tenant Context:</span>
-                <span className="px-3 py-1 bg-cyan-950/40 border border-cyan-500/20 rounded-full text-cyan-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+                <h1 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-indigo-600" />
+                  {activeTab === 'overview' && 'Overview Dashboard'}
+                  {activeTab === 'telemetry' && 'Telemetry Monitor & Live Inspector'}
+                  {activeTab === 'devices' && 'Tenant Device Registry'}
+                  {activeTab === 'alarms' && 'Real-Time Alarms Console'}
+                  {activeTab === 'simulator' && 'mTLS Telemetry Testing Harness'}
+                </h1>
+                <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider">
                   {tenant.companyName} ({tenant.tenantId})
                 </span>
               </div>
 
               {/* Status & Inspector Controls */}
-              <div className="flex items-center gap-3 text-xs font-mono">
+              <div className="flex items-center gap-4 text-xs font-mono">
                 <button
                   onClick={() => setInspectorOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 font-bold text-[10px] uppercase flex items-center gap-1.5 transition-all shadow-lg shadow-cyan-950/40"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold flex items-center gap-1.5 transition-all text-xs"
                 >
-                  <Code className="w-3.5 h-3.5 text-cyan-400" />
+                  <Code className="w-3.5 h-3.5 text-indigo-600" />
                   <span>JSON Inspector</span>
                   {payloadStats.count > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-cyan-500 text-black text-[9px] font-bold">
+                    <span className="px-1.5 py-0.2 rounded-full bg-indigo-600 text-white text-[9px] font-bold">
                       {payloadStats.count}
                     </span>
                   )}
@@ -1149,25 +1211,22 @@ export default function App() {
 
                 <div className="flex items-center gap-2">
                   {isConnected ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold uppercase">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold uppercase">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                       Gateway Connected
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-950/40 border border-rose-500/20 text-rose-400 rounded-full text-[10px] font-bold uppercase">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-[10px] font-bold uppercase">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                       Gateway Offline
                     </span>
                   )}
                 </div>
-                <div className="text-slate-400 text-xs select-none hidden sm:block">
-                  {tenant.email}
-                </div>
               </div>
             </header>
 
-            {/* Dashboard Workspace */}
-            <main className="flex-1 p-6 overflow-y-auto space-y-6">
+            {/* Main Body Content Workspace */}
+            <main className="flex-1 p-8 space-y-6">
 
               {/* VIEW A: OVERVIEW DASHBOARD */}
               {activeTab === 'overview' && (
@@ -1177,40 +1236,40 @@ export default function App() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                     {/* Stat 1: Online Status */}
-                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
                       <div>
-                        <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">System Status</span>
-                        <span className="text-xl font-bold orbitron text-white mt-1 block">
+                        <span className="text-xs text-slate-500 font-mono font-bold uppercase tracking-wider block">System Status</span>
+                        <span className="text-2xl font-black text-slate-900 mt-1 block">
                           {Object.values(liveDevices).filter(v => v).length} / {devices.length} Online
                         </span>
                       </div>
-                      <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 text-emerald-400">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shadow-xs">
                         <Activity className="w-6 h-6 animate-pulse" />
                       </div>
                     </div>
 
                     {/* Stat 2: Active Alarms */}
-                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
                       <div>
-                        <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">Active Incidents</span>
-                        <span className="text-xl font-bold orbitron text-white mt-1 block">
+                        <span className="text-xs text-slate-500 font-mono font-bold uppercase tracking-wider block">Active Incidents</span>
+                        <span className="text-2xl font-black text-slate-900 mt-1 block">
                           {alarms.filter(a => a.status === 'ACTIVE').length} Alarms
                         </span>
                       </div>
-                      <div className="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-rose-400">
+                      <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shadow-xs">
                         <Bell className="w-6 h-6 animate-bounce" style={{ animationDuration: '3s' }} />
                       </div>
                     </div>
 
                     {/* Stat 3: Device Registry size */}
-                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
                       <div>
-                        <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">Registered Assets</span>
-                        <span className="text-xl font-bold orbitron text-white mt-1 block">
+                        <span className="text-xs text-slate-500 font-mono font-bold uppercase tracking-wider block">Registered Assets</span>
+                        <span className="text-2xl font-black text-slate-900 mt-1 block">
                           {devices.length} Devices
                         </span>
                       </div>
-                      <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20 text-cyan-400">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center shadow-xs">
                         <Cpu className="w-6 h-6" />
                       </div>
                     </div>
@@ -1218,19 +1277,19 @@ export default function App() {
                   </div>
 
                   {/* Devices Overview Grid */}
-                  <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                     <div>
-                      <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide flex items-center gap-2">
-                        <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+                      <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                        <Radio className="w-4 h-4 text-indigo-600 animate-pulse" />
                         All Devices Display Monitor
                       </h3>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Real-time connectivity and status matrix for all active multi-tenant telemetry points.</p>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">Real-time connectivity and status matrix for all active multi-tenant telemetry points.</p>
                     </div>
 
                     {devices.length === 0 ? (
-                      <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl bg-slate-950/20">
-                        <Cpu className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                        <p className="text-xs font-mono text-slate-500">No active registered devices found. Onboard a device to view stats.</p>
+                      <div className="text-center py-12 border border-dashed border-slate-300 rounded-xl bg-slate-50">
+                        <Cpu className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                        <p className="text-xs font-mono text-slate-600">No active registered devices found. Onboard a device to view stats.</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1242,30 +1301,31 @@ export default function App() {
                           return (
                             <div
                               key={d.device_id}
-                              className={`bg-[#0a0f1d] border rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all hover:scale-[1.01] hover:border-slate-700/60 ${isOnline ? 'border-slate-800/80' : 'border-slate-900/60 opacity-70'
-                                }`}
+                              className={`bg-slate-50/80 border rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-all hover:bg-white hover:shadow-md ${
+                                isOnline ? 'border-slate-200' : 'border-slate-200/60 opacity-75'
+                              }`}
                             >
                               {/* Card Header */}
-                              <div className="flex items-start justify-between border-b border-slate-800/40 pb-3 mb-4">
+                              <div className="flex items-start justify-between border-b border-slate-200 pb-3 mb-4">
                                 <div>
-                                  <span className="text-[9px] text-slate-500 font-mono font-bold uppercase tracking-wider block">{d.device_type}</span>
-                                  <h4 className="text-xs font-bold font-mono text-slate-200 mt-0.5">{d.device_id}</h4>
+                                  <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider block">{d.device_type}</span>
+                                  <h4 className="text-xs font-bold font-mono text-slate-900 mt-0.5">{d.device_id}</h4>
                                 </div>
 
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => openStudioForDevice(d.device_id)}
                                     title="Configure Widget Studio & Data Mapping"
-                                    className="p-1 rounded-lg bg-slate-900 hover:bg-cyan-950/60 border border-slate-800 hover:border-cyan-500/40 text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-[9px] font-mono px-1.5 font-bold"
+                                    className="p-1 rounded-lg bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 transition-all flex items-center gap-1 text-[9px] font-mono px-2 font-bold shadow-xs"
                                   >
-                                    <Sliders className="w-3 h-3 text-cyan-400" /> Studio
+                                    <Sliders className="w-3 h-3 text-indigo-600" /> Studio
                                   </button>
                                   {deviceAlarms.length > 0 && (
-                                    <span className="px-2 py-0.5 rounded-full bg-rose-600/10 border border-rose-500/20 text-rose-400 text-[8px] font-mono font-bold animate-pulse">
+                                    <span className="px-2 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-700 text-[8px] font-mono font-bold animate-pulse">
                                       {deviceAlarms.length} ALARM
                                     </span>
                                   )}
-                                  <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse' : 'bg-slate-750'
+                                  <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-xs animate-pulse' : 'bg-slate-300'
                                     }`}></span>
                                 </div>
                               </div>
@@ -1281,23 +1341,23 @@ export default function App() {
                                         const isBoolean = typeof val === 'boolean';
 
                                         return (
-                                          <div key={key} className="bg-black/35 rounded-lg p-2 border border-slate-900 flex flex-col justify-between">
-                                            <span className="text-[8px] text-slate-500 uppercase tracking-wide truncate block">{key.replace('_', ' ')}</span>
+                                          <div key={key} className="bg-white rounded-lg p-2.5 border border-slate-200 flex flex-col justify-between shadow-2xs">
+                                            <span className="text-[8px] text-slate-500 uppercase tracking-wide truncate block font-bold">{key.replace('_', ' ')}</span>
                                             {isBoolean ? (
                                               <div className="flex items-center justify-between mt-1">
-                                                <span className={`font-bold ${val ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                                <span className={`font-bold ${val ? 'text-emerald-700' : 'text-slate-500'}`}>
                                                   {val ? 'ON' : 'OFF'}
                                                 </span>
                                                 <button
                                                   onClick={() => handleActuateDevice(d.device_id, key, !val)}
-                                                  className="w-8 h-4 rounded-full bg-slate-800 relative transition-all border border-slate-700 focus:outline-none"
+                                                  className="w-8 h-4 rounded-full bg-slate-200 relative transition-all border border-slate-300 focus:outline-none"
                                                 >
-                                                  <span className={`w-3 h-3 rounded-full bg-cyan-400 absolute top-0.5 transition-all ${val ? 'right-0.5' : 'left-0.5'
+                                                  <span className={`w-3 h-3 rounded-full bg-indigo-600 absolute top-0.5 transition-all ${val ? 'right-0.5' : 'left-0.5'
                                                     }`}></span>
                                                 </button>
                                               </div>
                                             ) : (
-                                              <span className="text-[11px] font-bold text-slate-200 mt-1 block">
+                                              <span className="text-xs font-extrabold text-slate-900 mt-1 block">
                                                 {typeof val === 'number' ? val.toFixed(1) : String(val)}
                                               </span>
                                             )}
@@ -1306,17 +1366,17 @@ export default function App() {
                                       })}
                                   </div>
                                 ) : (
-                                  <div className="h-[76px] flex items-center justify-center border border-slate-900 bg-slate-950/10 rounded-xl">
-                                    <span className="text-[10px] font-mono text-slate-600 italic">No live readings available</span>
+                                  <div className="h-[76px] flex items-center justify-center border border-slate-200 bg-white rounded-xl">
+                                    <span className="text-[10px] font-mono text-slate-400 italic">No live readings available</span>
                                   </div>
                                 )}
                               </div>
 
                               {/* Card Footer */}
-                              <div className="border-t border-slate-800/40 pt-4 mt-4 flex items-center justify-between">
-                                <span className="text-[8px] text-slate-600 font-mono">
+                              <div className="border-t border-slate-200 pt-3 mt-4 flex items-center justify-between">
+                                <span className="text-[9px] text-slate-500 font-mono">
                                   {isOnline && data?.timestamp
-                                    ? `Last update: ${new Date(data.timestamp).toLocaleTimeString()}`
+                                    ? `Updated: ${new Date(data.timestamp).toLocaleTimeString()}`
                                     : 'Offline / Standby'}
                                 </span>
 
@@ -1325,7 +1385,7 @@ export default function App() {
                                     setActiveDeviceId(d.device_id);
                                     setActiveTab('telemetry');
                                   }}
-                                  className="inline-flex items-center gap-1 text-[9px] font-bold font-mono text-cyan-400 hover:text-cyan-300 transition-colors uppercase"
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold font-mono text-indigo-600 hover:text-indigo-800 transition-colors uppercase"
                                 >
                                   Inspect Detail &gt;
                                 </button>
@@ -1347,28 +1407,27 @@ export default function App() {
 
                   {/* Left Column: Device Navigation */}
                   <div className="lg:col-span-4 flex flex-col gap-4">
-                    <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase font-mono flex items-center justify-between">
+                    <h2 className="text-xs font-bold tracking-wider text-slate-500 uppercase font-mono flex items-center justify-between">
                       <span>Registered Tenant Devices</span>
                       <button
                         onClick={fetchDevices}
-                        className="text-[10px] text-cyan-400 font-mono flex items-center gap-1 hover:text-cyan-300"
+                        className="text-[10px] text-indigo-600 font-mono flex items-center gap-1 hover:text-indigo-800 font-bold"
                       >
                         <RefreshCw className="w-3 h-3" /> Refresh
                       </button>
                     </h2>
 
-                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto">
+                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
                       {loadingDevices ? (
-                        <div className="p-8 border border-slate-800 rounded-xl text-center text-slate-500 font-mono text-xs">
+                        <div className="p-8 border border-slate-200 rounded-2xl bg-white text-center text-slate-500 font-mono text-xs shadow-xs">
                           Querying DB registry...
                         </div>
                       ) : devices.length === 0 ? (
-                        <div className="border border-dashed border-slate-800 rounded-xl p-8 text-center text-slate-600 text-xs font-mono">
+                        <div className="border border-dashed border-slate-300 rounded-2xl bg-slate-50 p-8 text-center text-slate-600 text-xs font-mono">
                           No registered devices found. Use the Device Registry tab to register a new Thing.
                         </div>
                       ) : (
                         devices.map((device) => {
-                          const color = getDeviceColor(device.device_type);
                           const isSelected = activeDeviceId === device.device_id;
                           const isLive = liveDevices[device.device_id];
                           const telemetry = liveTelemetry[device.device_id];
@@ -1385,30 +1444,30 @@ export default function App() {
                                 setActiveDeviceId(device.device_id);
                                 setSimDeviceId(device.device_id);
                               }}
-                              className={`text-left w-full border rounded-xl p-4 transition-all duration-300 relative overflow-hidden flex items-center justify-between ${isSelected
+                              className={`text-left w-full border rounded-2xl p-4 transition-all duration-200 relative overflow-hidden flex items-center justify-between ${isSelected
                                   ? hasAlarms
                                     ? isCriticalAlarm
-                                      ? 'bg-rose-950/20 border-rose-500 shadow-lg shadow-rose-500/10'
-                                      : 'bg-amber-950/20 border-amber-500 shadow-lg shadow-amber-500/10'
-                                    : `bg-[#0d162a]/90 border-${color}-500/80 shadow-lg shadow-${color}-500/10`
+                                      ? 'bg-rose-50 border-rose-300 shadow-sm'
+                                      : 'bg-amber-50 border-amber-300 shadow-sm'
+                                    : 'bg-indigo-50/80 border-indigo-300 shadow-sm'
                                   : hasAlarms
                                     ? isCriticalAlarm
-                                      ? 'bg-rose-950/10 border-rose-900/60 hover:bg-rose-950/20'
-                                      : 'bg-amber-950/10 border-amber-900/60 hover:bg-amber-950/20'
-                                    : 'bg-[#0c1222]/80 border-slate-800 hover:border-slate-700 hover:bg-[#0e1628]/50'
+                                      ? 'bg-rose-50/50 border-rose-200 hover:bg-rose-50'
+                                      : 'bg-amber-50/50 border-amber-200 hover:bg-amber-50'
+                                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-xs'
                                 }`}
                             >
                               <div className="flex items-center gap-3 z-10">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isSelected
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isSelected
                                     ? hasAlarms
-                                      ? isCriticalAlarm ? 'bg-rose-900/30 text-rose-400 border border-rose-500/20' : 'bg-amber-900/30 text-amber-400 border border-amber-500/20'
-                                      : 'bg-cyan-950/60 text-cyan-400 border border-cyan-500/20'
-                                    : 'bg-slate-900/80 text-slate-400 border border-slate-800'
+                                      ? isCriticalAlarm ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-amber-100 text-amber-700 border-amber-200'
+                                      : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
                                   }`}>
                                   {getDeviceIcon(device.device_type)}
                                 </div>
                                 <div>
-                                  <div className="font-bold font-mono text-xs tracking-wide text-white flex items-center gap-1.5">
+                                  <div className="font-bold font-mono text-xs tracking-wide text-slate-900 flex items-center gap-1.5">
                                     {device.device_id}
                                     {hasAlarms && (
                                       <span className={`w-2 h-2 rounded-full ${isCriticalAlarm ? 'bg-rose-500' : 'bg-amber-500'} animate-ping`}></span>
@@ -1422,24 +1481,24 @@ export default function App() {
 
                               <div className="text-right flex flex-col items-end z-10 font-mono">
                                 {hasAlarms ? (
-                                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded border ${isCriticalAlarm
-                                      ? 'bg-rose-950/60 border-rose-500/30 text-rose-400'
-                                      : 'bg-amber-950/60 border-amber-500/30 text-amber-400'
+                                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border ${isCriticalAlarm
+                                      ? 'bg-rose-100 border-rose-200 text-rose-700'
+                                      : 'bg-amber-100 border-amber-200 text-amber-700'
                                     }`}>
                                     ALERT
                                   </span>
                                 ) : isLive ? (
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/25">
-                                    <span className="w-1 h-1 rounded-full bg-cyan-400 animate-ping"></span>
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-ping"></span>
                                     LIVE
                                   </span>
                                 ) : (
-                                  <span className="text-[9px] font-bold text-slate-500 uppercase">
-                                    REG
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                    STANDBY
                                   </span>
                                 )}
 
-                                <span className="text-xs font-bold text-slate-300 mt-1.5">
+                                <span className="text-xs font-bold text-slate-700 mt-1.5">
                                   {device.device_type === 'pump' && telemetry && `${(telemetry.flow_rate || 0).toFixed(1)} L/m`}
                                   {device.device_type === 'temp_sensor' && telemetry && `${(telemetry.temperature || 0).toFixed(1)} °C`}
                                   {device.device_type === 'pressure_sensor' && telemetry && `${(telemetry.pressure || 0).toFixed(2)} Bar`}
@@ -1449,7 +1508,7 @@ export default function App() {
                               </div>
 
                               {isSelected && (
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${hasAlarms ? isCriticalAlarm ? 'bg-rose-500' : 'bg-amber-500' : 'bg-cyan-500'}`}></div>
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${hasAlarms ? isCriticalAlarm ? 'bg-rose-500' : 'bg-amber-500' : 'bg-indigo-600'}`}></div>
                               )}
                             </button>
                           );
@@ -1467,7 +1526,6 @@ export default function App() {
 
                         // Check active alarms for this device
                         const deviceAlarms = alarms.filter(a => a.device_id === activeDeviceId && (a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED'));
-                        const color = deviceAlarms.length > 0 ? (deviceAlarms.some(a => a.severity === 'CRITICAL') ? 'rose' : 'amber') : getDeviceColor(activeDevice.device_type);
 
                         // Percent calculations for dynamic bars
                         const flowPercent = telemetry && activeDevice.device_type === 'pump' ? Math.min(100, Math.max(0, ((telemetry.flow_rate || 0) / 50) * 100)) : 0;
@@ -1478,24 +1536,21 @@ export default function App() {
                         const powerPercent = telemetry && activeDevice.device_type === 'power_meter' ? Math.min(100, Math.max(0, ((telemetry.power || 0) / 2.0) * 100)) : 0;
 
                         return (
-                          <div className={`bg-[#0c1222] border rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[420px] transition-all duration-300 ${deviceAlarms.length > 0
+                          <div className={`bg-white border rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[420px] transition-all duration-200 ${deviceAlarms.length > 0
                               ? deviceAlarms.some(a => a.severity === 'CRITICAL')
-                                ? 'border-rose-500/40 shadow-rose-950/10'
-                                : 'border-amber-500/40 shadow-amber-950/10'
-                              : 'border-slate-800'
+                                ? 'border-rose-300'
+                                : 'border-amber-300'
+                              : 'border-slate-200'
                             }`}>
 
-                            {/* Glow decoration */}
-                            <div className={`absolute -top-12 -right-12 w-48 h-48 bg-${color}-500/5 rounded-full blur-3xl pointer-events-none`}></div>
-
                             {/* Device Info Header */}
-                            <div className="flex justify-between items-start border-b border-slate-800/80 pb-4 mb-6 z-10">
+                            <div className="flex justify-between items-start border-b border-slate-200 pb-4 mb-6 z-10">
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-${color}-400`}>
+                                  <span className="text-indigo-600">
                                     {getDeviceIcon(activeDevice.device_type)}
                                   </span>
-                                  <h3 className="text-base font-bold orbitron tracking-wide text-white">
+                                  <h3 className="text-base font-extrabold text-slate-900 tracking-wide">
                                     {activeDevice.device_id}
                                   </h3>
                                 </div>
@@ -1507,16 +1562,16 @@ export default function App() {
                               <div className="flex items-center gap-3">
                                 <button
                                   onClick={() => openStudioForDevice(activeDevice.device_id)}
-                                  className="px-3 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 font-bold font-mono text-[10px] uppercase flex items-center gap-1.5 transition-all shadow-lg shadow-cyan-950/40"
+                                  className="px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold font-mono text-[10px] uppercase flex items-center gap-1.5 transition-all shadow-xs"
                                 >
-                                  <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                                  <Sliders className="w-3.5 h-3.5 text-indigo-600" />
                                   <span>Widget Studio</span>
                                 </button>
                                 <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono uppercase border ${deviceAlarms.length > 0
                                     ? deviceAlarms.some(a => a.severity === 'CRITICAL')
-                                      ? 'bg-rose-950/50 border-rose-500/30 text-rose-400'
-                                      : 'bg-amber-950/50 border-amber-500/30 text-amber-400'
-                                    : 'bg-emerald-950/40 border-emerald-500/20 text-emerald-400'
+                                      ? 'bg-rose-100 border-rose-200 text-rose-700'
+                                      : 'bg-amber-100 border-amber-200 text-amber-700'
+                                    : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                   }`}>
                                   {deviceAlarms.length > 0
                                     ? `${deviceAlarms.length} ACTIVE ALARM${deviceAlarms.length > 1 ? 'S' : ''}`
@@ -1528,20 +1583,20 @@ export default function App() {
                             {/* Alarms Detail banner if device has active alarms */}
                             {deviceAlarms.length > 0 && (
                               <div className={`mb-6 p-4 rounded-xl border font-mono text-xs flex flex-col gap-2 ${deviceAlarms.some(a => a.severity === 'CRITICAL')
-                                  ? 'bg-rose-950/30 border-rose-500/20 text-rose-300'
-                                  : 'bg-amber-950/30 border-amber-500/20 text-amber-300'
+                                  ? 'bg-rose-50 border-rose-200 text-rose-900'
+                                  : 'bg-amber-50 border-amber-200 text-amber-900'
                                 }`}>
                                 <div className="font-bold flex items-center gap-2">
-                                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
                                   <span>ACTIVE INCIDENT DETECTED</span>
                                 </div>
                                 <div className="space-y-1.5 text-2xs pl-6">
                                   {deviceAlarms.map(a => (
                                     <div key={a.alarm_id} className="flex justify-between items-center gap-2">
-                                      <span className="flex items-center gap-2">
+                                      <span className="flex items-center gap-2 font-medium">
                                         • {a.message}
                                         {a.status === 'ACKNOWLEDGED' && (
-                                          <span className="text-amber-300 font-bold text-[9px] uppercase bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded tracking-wide">
+                                          <span className="text-amber-800 font-bold text-[9px] uppercase bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded tracking-wide">
                                             ✓ ACKNOWLEDGED
                                           </span>
                                         )}
@@ -1550,7 +1605,7 @@ export default function App() {
                                         {a.status === 'ACTIVE' && (tenant.role === 'ADMIN' || tenant.role === 'SUPERADMIN') && (
                                           <button
                                             onClick={() => handleAcknowledgeAlarm(a.alarm_id)}
-                                            className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-all text-2xs font-bold font-mono uppercase"
+                                            className="px-2 py-1 rounded bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 transition-all text-2xs font-bold font-mono uppercase shadow-2xs"
                                           >
                                             Acknowledge
                                           </button>
@@ -1558,7 +1613,7 @@ export default function App() {
                                         {(tenant.role === 'ADMIN' || tenant.role === 'SUPERADMIN') && (
                                           <button
                                             onClick={() => handleClearAlarm(a.alarm_id)}
-                                            className="px-2 py-0.5 rounded bg-rose-950/80 border border-rose-500/40 hover:bg-rose-900 text-rose-300 hover:text-white transition-all text-2xs font-bold font-mono uppercase"
+                                            className="px-2 py-1 rounded bg-rose-600 border border-rose-700 text-white hover:bg-rose-700 transition-all text-2xs font-bold font-mono uppercase shadow-2xs"
                                           >
                                             Clear Incident
                                           </button>
@@ -1574,9 +1629,9 @@ export default function App() {
                             <div className="flex-1 flex flex-col justify-center py-4 z-10">
                               {!telemetry ? (
                                 <div className="text-center py-8">
-                                  <Radio className="w-10 h-10 text-slate-700 animate-pulse mx-auto mb-3" />
-                                  <p className="text-xs font-mono text-slate-500">Awaiting device transmission...</p>
-                                  <p className="text-[10px] font-mono text-slate-600 mt-1">Publish telemetry using simulator.py or go to the Testing Harness tab.</p>
+                                  <Radio className="w-10 h-10 text-slate-400 animate-pulse mx-auto mb-3" />
+                                  <p className="text-xs font-mono text-slate-600">Awaiting device transmission...</p>
+                                  <p className="text-[10px] font-mono text-slate-500 mt-1">Publish telemetry using simulator.py or go to the Testing Harness tab.</p>
                                 </div>
                               ) : (
                                 <div className="space-y-6">
@@ -1584,31 +1639,31 @@ export default function App() {
                                   {/* Type: PUMP */}
                                   {activeDevice.device_type === 'pump' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      <div className="bg-[#10192e]/60 border border-slate-800 p-5 rounded-xl">
+                                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
                                         <div className="flex justify-between text-[10px] font-bold font-mono text-slate-500 mb-1 uppercase tracking-wide">
                                           <span>Flow Rate</span>
                                           <span>0 - 50 L/min</span>
                                         </div>
-                                        <div className="text-3xl font-black orbitron text-cyan-400 my-2">
+                                        <div className="text-3xl font-black text-slate-900 my-2">
                                           {telemetry.flow_rate?.toFixed(1)}{' '}
-                                          <span className="text-xs font-light text-slate-400 font-mono uppercase">L/min</span>
+                                          <span className="text-xs font-light text-slate-500 font-mono uppercase">L/min</span>
                                         </div>
-                                        <div className="h-2.5 bg-slate-950 rounded-full border border-slate-850 overflow-hidden mt-3 p-0.5">
-                                          <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full transition-all duration-1000 ease-out" style={{ width: `${flowPercent}%` }}></div>
+                                        <div className="h-2.5 bg-slate-200 rounded-full border border-slate-300 overflow-hidden mt-3 p-0.5">
+                                          <div className="h-full bg-indigo-600 rounded-full transition-all duration-1000 ease-out" style={{ width: `${flowPercent}%` }}></div>
                                         </div>
                                       </div>
 
-                                      <div className="bg-[#10192e]/60 border border-slate-800 p-5 rounded-xl">
+                                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
                                         <div className="flex justify-between text-[10px] font-bold font-mono text-slate-500 mb-1 uppercase tracking-wide">
                                           <span>Core Temperature</span>
                                           <span>Threshold: 60 / 70 °C</span>
                                         </div>
-                                        <div className={`text-3xl font-black orbitron my-2 ${telemetry.temperature > 70 ? 'text-rose-500 animate-pulse' : telemetry.temperature > 60 ? 'text-amber-500' : 'text-emerald-400'}`}>
+                                        <div className={`text-3xl font-black my-2 ${telemetry.temperature > 70 ? 'text-rose-600 animate-pulse' : telemetry.temperature > 60 ? 'text-amber-600' : 'text-emerald-600'}`}>
                                           {telemetry.temperature?.toFixed(1)}{' '}
-                                          <span className="text-xs font-light text-slate-400 font-mono">°C</span>
+                                          <span className="text-xs font-light text-slate-500 font-mono">°C</span>
                                         </div>
-                                        <div className="h-2.5 bg-slate-950 rounded-full border border-slate-850 overflow-hidden mt-3 p-0.5">
-                                          <div className={`h-full bg-gradient-to-r ${telemetry.temperature > 70 ? 'from-rose-600 to-rose-455' : telemetry.temperature > 60 ? 'from-amber-600 to-amber-444' : 'from-emerald-600 to-emerald-400'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${pumpTempPercent}%` }}></div>
+                                        <div className="h-2.5 bg-slate-200 rounded-full border border-slate-300 overflow-hidden mt-3 p-0.5">
+                                          <div className={`h-full ${telemetry.temperature > 70 ? 'bg-rose-500' : telemetry.temperature > 60 ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${pumpTempPercent}%` }}></div>
                                         </div>
                                       </div>
                                     </div>
@@ -1617,31 +1672,31 @@ export default function App() {
                                   {/* Type: TEMP_SENSOR */}
                                   {activeDevice.device_type === 'temp_sensor' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      <div className="bg-[#10192e]/60 border border-slate-800 p-5 rounded-xl">
+                                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
                                         <div className="flex justify-between text-[10px] font-bold font-mono text-slate-500 mb-1 uppercase tracking-wide">
                                           <span>Ambient Temperature</span>
                                           <span>Threshold: 38 °C</span>
                                         </div>
-                                        <div className={`text-3xl font-black orbitron my-2 ${telemetry.temperature > 38 ? 'text-amber-500 animate-pulse' : 'text-emerald-400'}`}>
+                                        <div className={`text-3xl font-black my-2 ${telemetry.temperature > 38 ? 'text-amber-600 animate-pulse' : 'text-emerald-600'}`}>
                                           {telemetry.temperature?.toFixed(1)}{' '}
-                                          <span className="text-xs font-light text-slate-400 font-mono">°C</span>
+                                          <span className="text-xs font-light text-slate-500 font-mono">°C</span>
                                         </div>
-                                        <div className="h-2.5 bg-slate-950 rounded-full border border-slate-850 overflow-hidden mt-3 p-0.5">
-                                          <div className={`h-full bg-gradient-to-r ${telemetry.temperature > 38 ? 'from-amber-600 to-amber-400' : 'from-emerald-600 to-emerald-400'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${tempSensorPercent}%` }}></div>
+                                        <div className="h-2.5 bg-slate-200 rounded-full border border-slate-300 overflow-hidden mt-3 p-0.5">
+                                          <div className={`h-full ${telemetry.temperature > 38 ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${tempSensorPercent}%` }}></div>
                                         </div>
                                       </div>
 
-                                      <div className="bg-[#10192e]/60 border border-slate-800 p-5 rounded-xl">
+                                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
                                         <div className="flex justify-between text-[10px] font-bold font-mono text-slate-500 mb-1 uppercase tracking-wide">
                                           <span>Ambient Humidity</span>
                                           <span>Threshold: 90%</span>
                                         </div>
-                                        <div className={`text-3xl font-black orbitron my-2 ${telemetry.humidity > 90 ? 'text-amber-500 animate-pulse' : 'text-cyan-400'}`}>
+                                        <div className={`text-3xl font-black my-2 ${telemetry.humidity > 90 ? 'text-amber-600 animate-pulse' : 'text-indigo-600'}`}>
                                           {telemetry.humidity?.toFixed(1)}{' '}
-                                          <span className="text-xs font-light text-slate-400 font-mono">%</span>
+                                          <span className="text-xs font-light text-slate-500 font-mono">%</span>
                                         </div>
-                                        <div className="h-2.5 bg-slate-950 rounded-full border border-slate-850 overflow-hidden mt-3 p-0.5">
-                                          <div className={`h-full bg-gradient-to-r ${telemetry.humidity > 90 ? 'from-amber-600 to-amber-400' : 'from-cyan-600 to-cyan-400'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${humidityPercent}%` }}></div>
+                                        <div className="h-2.5 bg-slate-200 rounded-full border border-slate-300 overflow-hidden mt-3 p-0.5">
+                                          <div className={`h-full ${telemetry.humidity > 90 ? 'bg-amber-500' : 'bg-indigo-600'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${humidityPercent}%` }}></div>
                                         </div>
                                       </div>
                                     </div>
@@ -1649,19 +1704,19 @@ export default function App() {
 
                                   {/* Type: PRESSURE_SENSOR */}
                                   {activeDevice.device_type === 'pressure_sensor' && (
-                                    <div className="bg-[#10192e]/60 border border-slate-800 p-6 rounded-xl">
+                                    <div className="bg-slate-50 border border-slate-200 p-6 rounded-xl">
                                       <div className="flex justify-between text-[10px] font-bold font-mono text-slate-500 mb-2 uppercase tracking-wide">
                                         <span>Pipeline Pressure</span>
                                         <span>Threshold: 4.5 / 5.0 Bar</span>
                                       </div>
                                       <div className="flex items-baseline gap-2">
-                                        <span className={`text-5xl font-black orbitron ${telemetry.pressure > 5 ? 'text-rose-500 animate-pulse' : telemetry.pressure > 4.5 ? 'text-amber-500' : 'text-emerald-400'}`}>
+                                        <span className={`text-5xl font-black ${telemetry.pressure > 5 ? 'text-rose-600 animate-pulse' : telemetry.pressure > 4.5 ? 'text-amber-600' : 'text-emerald-600'}`}>
                                           {telemetry.pressure?.toFixed(2)}
                                         </span>
-                                        <span className="text-xs text-slate-400 font-mono font-light">Bar</span>
+                                        <span className="text-xs text-slate-500 font-mono font-light">Bar</span>
                                       </div>
-                                      <div className="h-3.5 bg-slate-950 rounded-full border border-slate-850 overflow-hidden mt-4 p-0.5">
-                                        <div className={`h-full bg-gradient-to-r ${telemetry.pressure > 5 ? 'from-rose-600 to-rose-455' : telemetry.pressure > 4.5 ? 'from-amber-600 to-amber-444' : 'from-emerald-600 to-emerald-400'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${pressurePercent}%` }}></div>
+                                      <div className="h-3.5 bg-slate-200 rounded-full border border-slate-300 overflow-hidden mt-4 p-0.5">
+                                        <div className={`h-full ${telemetry.pressure > 5 ? 'bg-rose-500' : telemetry.pressure > 4.5 ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${pressurePercent}%` }}></div>
                                       </div>
                                     </div>
                                   )}
@@ -1670,33 +1725,33 @@ export default function App() {
                                   {activeDevice.device_type === 'power_meter' && (
                                     <div className="space-y-4">
                                       <div className="grid grid-cols-3 gap-4">
-                                        <div className="bg-[#10192e]/60 border border-slate-800 p-4 rounded-xl text-center">
-                                          <div className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-wide font-semibold">Voltage</div>
-                                          <div className="text-xl font-bold orbitron text-white mt-1">
+                                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
+                                          <div className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-wide">Voltage</div>
+                                          <div className="text-xl font-bold text-slate-900 mt-1">
                                             {telemetry.voltage?.toFixed(1)} <span className="text-2xs font-light text-slate-500 font-mono">V</span>
                                           </div>
                                         </div>
-                                        <div className="bg-[#10192e]/60 border border-slate-800 p-4 rounded-xl text-center">
+                                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
                                           <div className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-wide">Current</div>
-                                          <div className="text-xl font-bold orbitron text-white mt-1">
+                                          <div className="text-xl font-bold text-slate-900 mt-1">
                                             {telemetry.current?.toFixed(2)} <span className="text-2xs font-light text-slate-500 font-mono">A</span>
                                           </div>
                                         </div>
-                                        <div className="bg-[#10192e]/60 border border-slate-800 p-4 rounded-xl text-center">
+                                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
                                           <div className="text-[10px] font-bold font-mono text-slate-500 uppercase tracking-wide">Real Power</div>
-                                          <div className={`text-xl font-bold orbitron mt-1 ${telemetry.power > 1.5 ? 'text-rose-500 animate-pulse' : telemetry.power > 1.2 ? 'text-amber-500' : 'text-emerald-400'}`}>
+                                          <div className={`text-xl font-bold mt-1 ${telemetry.power > 1.5 ? 'text-rose-600 animate-pulse' : telemetry.power > 1.2 ? 'text-amber-600' : 'text-emerald-600'}`}>
                                             {telemetry.power?.toFixed(3)} <span className="text-2xs font-light text-slate-500 font-mono">kW</span>
                                           </div>
                                         </div>
                                       </div>
 
-                                      <div className="bg-[#10192e]/40 border border-slate-800 p-4 rounded-xl">
-                                        <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-1">
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                                        <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-1 font-bold">
                                           <span>Max Capacity Draw (1.2 / 1.5 kW Thresholds)</span>
                                           <span>{((telemetry.power || 0) / 2 * 100).toFixed(0)}% Load</span>
                                         </div>
-                                        <div className="h-2 bg-slate-950 rounded-full border border-slate-850 overflow-hidden mt-2 p-0.5">
-                                          <div className={`h-full bg-gradient-to-r ${telemetry.power > 1.5 ? 'from-rose-600 to-rose-455' : telemetry.power > 1.2 ? 'from-amber-600 to-amber-444' : 'from-emerald-600 to-emerald-400'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${powerPercent}%` }}></div>
+                                        <div className="h-2 bg-slate-200 rounded-full border border-slate-300 overflow-hidden mt-2 p-0.5">
+                                          <div className={`h-full ${telemetry.power > 1.5 ? 'bg-rose-500' : telemetry.power > 1.2 ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${powerPercent}%` }}></div>
                                         </div>
                                       </div>
                                     </div>
@@ -1839,43 +1894,43 @@ export default function App() {
                   {/* Request Form (Tenant Admin only) */}
                   {tenant.role === 'ADMIN' && (
                     <div className="lg:col-span-5 flex flex-col gap-6">
-                      <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl">
-                        <h3 className="text-sm font-bold orbitron text-white mb-1">Request Device Setup</h3>
-                        <p className="text-[10px] text-slate-500 font-mono mb-6">Submit a setup initiation request. A Coreboard administrator will complete the cloud registration on-site.</p>
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <h3 className="text-base font-extrabold text-slate-900 mb-1">Request Device Setup</h3>
+                        <p className="text-xs text-slate-500 font-mono mb-6">Submit a setup initiation request. A Coreboard administrator will complete the cloud registration on-site.</p>
 
                         <form onSubmit={handleRequestDevice} className="space-y-4 font-mono text-xs">
                           <div>
-                            <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Unique Device ID / Thing Name</label>
+                            <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide">Unique Device ID / Thing Name</label>
                             <input
                               type="text"
                               required
                               placeholder="e.g. PUMP-02"
                               value={newDeviceId}
                               onChange={(e) => setNewDeviceId(e.target.value)}
-                              className="w-full bg-[#0d1321] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 font-semibold"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Device Hardware Profile (Custom / Free-Text)</label>
+                            <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide">Device Hardware Profile (Custom / Free-Text)</label>
                             <input
                               type="text"
                               required
                               placeholder="e.g. Locking System, Solar Inverter, Pump..."
                               value={newDeviceType}
                               onChange={(e) => setNewDeviceType(e.target.value)}
-                              className="w-full bg-[#0d1321] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 font-bold text-cyan-400 mb-2"
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-indigo-700 focus:bg-white focus:outline-none focus:border-indigo-600 font-bold mb-2"
                             />
                             <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
-                              <span className="text-slate-500 self-center">Presets:</span>
+                              <span className="text-slate-500 self-center font-bold">Presets:</span>
                               {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
                                 <button
                                   key={preset}
                                   type="button"
                                   onClick={() => setNewDeviceType(preset)}
-                                  className={`px-2 py-0.5 rounded border transition-all ${newDeviceType === preset
-                                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
-                                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                                  className={`px-2 py-1 rounded-lg border transition-all ${newDeviceType === preset
+                                      ? 'bg-indigo-100 border-indigo-300 text-indigo-800 font-bold'
+                                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
                                   {preset}
@@ -1887,14 +1942,14 @@ export default function App() {
                           <button
                             type="submit"
                             disabled={isProvisioning}
-                            className={`w-full py-3 rounded-xl font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${isProvisioning
-                                ? 'bg-slate-850 text-slate-500 cursor-not-allowed border border-slate-800'
-                                : 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/25'
+                            className={`w-full py-3.5 rounded-xl font-bold uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 transition-all ${isProvisioning
+                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
                               }`}
                           >
                             {isProvisioning ? (
                               <>
-                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                <RefreshCw className="w-4 h-4 animate-spin text-white" />
                                 Submitting request...
                               </>
                             ) : (
@@ -1905,23 +1960,23 @@ export default function App() {
                       </div>
 
                       {/* Request logs console */}
-                      <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 flex flex-col h-[220px]">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col h-[220px] shadow-sm">
                         <div className="flex items-center gap-2 mb-3">
-                          <Terminal className="w-4 h-4 text-cyan-400" />
-                          <h3 className="text-xs font-bold orbitron text-white uppercase tracking-wider">Request Logs</h3>
+                          <Terminal className="w-4 h-4 text-indigo-600" />
+                          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Request Logs</h3>
                         </div>
-                        <div className="flex-1 bg-black/60 rounded-lg p-4 font-mono text-[10px] overflow-y-auto border border-slate-900 flex flex-col gap-2">
+                        <div className="flex-1 bg-slate-900 rounded-xl p-4 font-mono text-[10px] overflow-y-auto border border-slate-800 flex flex-col gap-2 shadow-inner">
                           {provLogs.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-slate-655 font-bold">
+                            <div className="h-full flex items-center justify-center text-slate-500 font-bold">
                               &gt;&gt; CONSOLE READY &lt;&lt;
                             </div>
                           ) : (
                             provLogs.map((log, idx) => {
-                              let color = 'text-slate-400';
-                              if (log.includes('[ERROR]')) color = 'text-rose-500 font-bold';
+                              let color = 'text-slate-300';
+                              if (log.includes('[ERROR]')) color = 'text-rose-400 font-bold';
                               if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
-                              if (log.includes('[INFO]')) color = 'text-cyan-400';
-                              return <div key={idx} className={`${color} border-l border-slate-850 pl-2`}>{log}</div>;
+                              if (log.includes('[INFO]')) color = 'text-indigo-300';
+                              return <div key={idx} className={`${color} border-l border-slate-700 pl-2`}>{log}</div>;
                             })
                           )}
                         </div>
@@ -1932,45 +1987,45 @@ export default function App() {
                   {/* Logs & Device listing */}
                   <div className={tenant.role === 'USER' ? "lg:col-span-12 flex flex-col gap-6" : "lg:col-span-7 flex flex-col gap-6"}>
                     {/* Device list */}
-                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl">
-                      <h3 className="text-sm font-bold orbitron text-white mb-4 uppercase tracking-wide">Registered Devices Registry</h3>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <h3 className="text-base font-extrabold text-slate-900 mb-4 uppercase tracking-wide">Registered Devices Registry</h3>
 
                       <div className="overflow-x-auto">
                         <table className="w-full text-left font-mono text-xs border-collapse">
                           <thead>
-                            <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-wider pb-3">
-                              <th className="pb-3 font-bold">Device ID</th>
-                              <th className="pb-3 font-bold">Hardware Classification</th>
-                              <th className="pb-3 font-bold">Created Date</th>
-                              <th className="pb-3 font-bold">State</th>
-                              <th className="pb-3 font-bold text-right">Integration Specifications</th>
+                            <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 uppercase text-[10px] tracking-wider">
+                              <th className="p-3 font-bold">Device ID</th>
+                              <th className="p-3 font-bold">Hardware Classification</th>
+                              <th className="p-3 font-bold">Created Date</th>
+                              <th className="p-3 font-bold">State</th>
+                              <th className="p-3 font-bold text-right">Integration Specifications</th>
                             </tr>
                           </thead>
                           <tbody>
                             {devices.length === 0 ? (
                               <tr>
-                                <td colSpan={4} className="py-8 text-center text-slate-600">
+                                <td colSpan={5} className="py-8 text-center text-slate-500">
                                   No devices registered under this tenant.
                                 </td>
                               </tr>
                             ) : (
                               devices.map((d) => (
-                                <tr key={d.device_id} className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-all">
-                                  <td className="py-3.5 text-slate-200 font-bold">{d.device_id}</td>
-                                  <td className="py-3.5 text-slate-400 uppercase text-[10px] tracking-wider">{d.device_type}</td>
-                                  <td className="py-3.5 text-slate-500">{new Date(d.created_at || Date.now()).toLocaleDateString()}</td>
-                                  <td className="py-3.5">
-                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] uppercase font-bold text-slate-500">
-                                      Registered
+                                <tr key={d.device_id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-all">
+                                  <td className="p-3.5 text-slate-900 font-bold">{d.device_id}</td>
+                                  <td className="p-3.5 text-slate-600 uppercase text-[10px] tracking-wider">{d.device_type}</td>
+                                  <td className="p-3.5 text-slate-500">{new Date(d.created_at || Date.now()).toLocaleDateString()}</td>
+                                  <td className="p-3.5">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] uppercase font-bold text-emerald-700">
+                                      Active
                                     </span>
                                   </td>
-                                  <td className="py-3.5 text-right">
+                                  <td className="p-3.5 text-right">
                                     <button
                                       onClick={() => {
                                         setSelectedTemplateDevice(d);
                                         setIsCopied(false);
                                       }}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 hover:bg-cyan-500 hover:text-black transition-all"
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all shadow-xs"
                                     >
                                       <Code className="w-3.5 h-3.5" />
                                       View MQTT & JSON
@@ -1985,23 +2040,23 @@ export default function App() {
                     </div>
 
                     {/* SDK logs console */}
-                    <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 flex flex-col h-[220px]">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col h-[220px] shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
-                        <Terminal className="w-4 h-4 text-cyan-400" />
-                        <h3 className="text-xs font-bold orbitron text-white uppercase tracking-wider">AWS Provisioning Logs</h3>
+                        <Terminal className="w-4 h-4 text-indigo-600" />
+                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">AWS Provisioning Logs</h3>
                       </div>
-                      <div className="flex-1 bg-black/60 rounded-lg p-4 font-mono text-[10px] overflow-y-auto border border-slate-900 flex flex-col gap-2">
+                      <div className="flex-1 bg-slate-900 rounded-xl p-4 font-mono text-[10px] overflow-y-auto border border-slate-800 flex flex-col gap-2 shadow-inner">
                         {provLogs.length === 0 ? (
-                          <div className="h-full flex items-center justify-center text-slate-600">
+                          <div className="h-full flex items-center justify-center text-slate-500">
                             &gt;&gt; CONSOLE READY. SUBMIT PROVISIONING FORM &lt;&lt;
                           </div>
                         ) : (
                           provLogs.map((log, idx) => {
-                            let color = 'text-slate-400';
-                            if (log.includes('[ERROR]')) color = 'text-rose-500 font-bold';
+                            let color = 'text-slate-300';
+                            if (log.includes('[ERROR]')) color = 'text-rose-400 font-bold';
                             if (log.includes('[SUCCESS]')) color = 'text-emerald-400 font-bold';
-                            if (log.includes('[AWS')) color = 'text-cyan-400';
-                            return <div key={idx} className={`${color} border-l border-slate-850 pl-2`}>{log}</div>;
+                            if (log.includes('[AWS')) color = 'text-indigo-300';
+                            return <div key={idx} className={`${color} border-l border-slate-700 pl-2`}>{log}</div>;
                           })
                         )}
                       </div>
@@ -2016,21 +2071,21 @@ export default function App() {
                 <div className="space-y-6">
 
                   {/* Alarm Control Filters Panel */}
-                  <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-wrap gap-4 items-center justify-between">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-wrap gap-4 items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold orbitron text-white uppercase tracking-wide flex items-center gap-2">
-                        <Bell className="w-4 h-4 text-rose-500 animate-pulse" />
+                      <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-rose-600 animate-pulse" />
                         Incident Management Center
                       </h3>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Real-time active and resolved telemetry alarms logged in DynamoDB.</p>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">Real-time active and resolved telemetry alarms logged in DynamoDB.</p>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800 font-mono text-2xs">
+                    <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 font-mono text-xs">
                       <button
                         onClick={() => setAlarmFilter('ACTIVE_ACK')}
                         className={`px-3 py-1.5 rounded-lg font-bold transition-all ${alarmFilter === 'ACTIVE_ACK'
-                            ? 'bg-rose-500 text-white'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         ACTIVE & ACK ({alarms.filter(a => a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED').length})
@@ -2038,8 +2093,8 @@ export default function App() {
                       <button
                         onClick={() => setAlarmFilter('CLEARED')}
                         className={`px-3 py-1.5 rounded-lg font-bold transition-all ${alarmFilter === 'CLEARED'
-                            ? 'bg-emerald-600 text-white'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         CLEARED ({alarms.filter(a => a.status === 'CLEARED').length})
@@ -2047,8 +2102,8 @@ export default function App() {
                       <button
                         onClick={() => setAlarmFilter('ALL')}
                         className={`px-3 py-1.5 rounded-lg font-bold transition-all ${alarmFilter === 'ALL'
-                            ? 'bg-slate-700 text-white'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         ALL HISTORY ({alarms.length})
@@ -2057,60 +2112,60 @@ export default function App() {
                   </div>
 
                   {/* Alarms Board */}
-                  <div className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left font-mono text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-wider pb-3">
-                            <th className="pb-3 font-bold">Severity</th>
-                            <th className="pb-3 font-bold">Device Name</th>
-                            <th className="pb-3 font-bold">Incident Type</th>
-                            <th className="pb-3 font-bold">Alarm Message</th>
-                            <th className="pb-3 font-bold">Trigger Metric</th>
-                            <th className="pb-3 font-bold">Timestamp</th>
-                            <th className="pb-3 font-bold">Status</th>
-                            <th className="pb-3 font-bold text-right">Actions</th>
+                          <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 uppercase text-[10px] tracking-wider">
+                            <th className="p-3 font-bold">Severity</th>
+                            <th className="p-3 font-bold">Device Name</th>
+                            <th className="p-3 font-bold">Incident Type</th>
+                            <th className="p-3 font-bold">Alarm Message</th>
+                            <th className="p-3 font-bold">Trigger Metric</th>
+                            <th className="p-3 font-bold">Timestamp</th>
+                            <th className="p-3 font-bold">Status</th>
+                            <th className="p-3 font-bold text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {filteredAlarms.length === 0 ? (
                             <tr>
-                              <td colSpan={8} className="py-8 text-center text-slate-600 italic">
+                              <td colSpan={8} className="py-8 text-center text-slate-500 italic">
                                 No alarms matching current filter rules found.
                               </td>
                             </tr>
                           ) : (
                             filteredAlarms.map((a) => {
                               const isCritical = a.severity === 'CRITICAL';
-                              let statusColor = 'text-rose-500 bg-rose-950/20 border-rose-900/40';
-                              if (a.status === 'ACKNOWLEDGED') statusColor = 'text-amber-400 bg-amber-950/20 border-amber-900/40';
-                              if (a.status === 'CLEARED') statusColor = 'text-emerald-400 bg-emerald-950/20 border-emerald-900/20';
+                              let statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
+                              if (a.status === 'ACKNOWLEDGED') statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
+                              if (a.status === 'CLEARED') statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
 
                               return (
-                                <tr key={a.alarm_id} className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-all">
-                                  <td className="py-4">
-                                    <span className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase border ${isCritical ? 'bg-rose-950 text-rose-400 border-rose-800/30' : 'bg-amber-950 text-amber-400 border-amber-800/30'
+                                <tr key={a.alarm_id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-all">
+                                  <td className="p-3.5">
+                                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[9px] uppercase border ${isCritical ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-amber-100 text-amber-800 border-amber-200'
                                       }`}>
                                       {a.severity}
                                     </span>
                                   </td>
-                                  <td className="py-4 text-slate-200 font-bold">{a.device_id}</td>
-                                  <td className="py-4 text-slate-400 uppercase text-[10px]">{a.alarm_type.replace(/_/g, ' ')}</td>
-                                  <td className="py-4 text-slate-300 max-w-xs truncate" title={a.message}>{a.message}</td>
-                                  <td className="py-4 text-cyan-400 font-bold">{a.trigger_value}</td>
-                                  <td className="py-4 text-slate-500 text-[10px]">{new Date(a.updated_at || a.created_at).toLocaleTimeString()}</td>
-                                  <td className="py-4">
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${statusColor}`}>
+                                  <td className="p-3.5 text-slate-900 font-bold">{a.device_id}</td>
+                                  <td className="p-3.5 text-slate-600 uppercase text-[10px]">{a.alarm_type.replace(/_/g, ' ')}</td>
+                                  <td className="p-3.5 text-slate-800 font-medium max-w-xs truncate" title={a.message}>{a.message}</td>
+                                  <td className="p-3.5 text-indigo-700 font-bold">{a.trigger_value}</td>
+                                  <td className="p-3.5 text-slate-500 text-[10px]">{new Date(a.updated_at || a.created_at).toLocaleTimeString()}</td>
+                                  <td className="p-3.5">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase border ${statusColor}`}>
                                       {a.status}
                                     </span>
                                   </td>
-                                  <td className="py-4 text-right">
+                                  <td className="p-3.5 text-right">
                                     {tenant.role === 'ADMIN' ? (
                                       <>
                                         {a.status === 'ACTIVE' && (
                                           <button
                                             onClick={() => handleAcknowledgeAlarm(a.alarm_id)}
-                                            className="px-2 py-1 rounded bg-[#102431] hover:bg-[#122e3e] border border-cyan-500/20 text-cyan-400 font-bold mr-2 hover:text-cyan-300 transition-all text-[10px]"
+                                            className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold mr-2 hover:bg-amber-100 transition-all text-[10px] shadow-2xs"
                                           >
                                             Acknowledge
                                           </button>
@@ -2118,17 +2173,17 @@ export default function App() {
                                         {a.status !== 'CLEARED' && (
                                           <button
                                             onClick={() => handleClearAlarm(a.alarm_id)}
-                                            className="px-2 py-1 rounded bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-400 hover:text-white font-bold transition-all text-[10px]"
+                                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all text-[10px] shadow-2xs"
                                           >
                                             Resolve
                                           </button>
                                         )}
                                         {a.status === 'CLEARED' && (
-                                          <span className="text-[10px] text-slate-600 italic">Resolved</span>
+                                          <span className="text-[10px] text-slate-400 italic">Resolved</span>
                                         )}
                                       </>
                                     ) : (
-                                      <span className="text-[10px] text-slate-500 italic">Read-Only</span>
+                                      <span className="text-[10px] text-slate-400 italic">Read-Only</span>
                                     )}
                                   </td>
                                 </tr>
@@ -2141,27 +2196,26 @@ export default function App() {
                   </div>
 
                   {/* Dual Pane: logs bottom */}
-                  <section className="bg-[#0c1222] border border-slate-800 rounded-2xl p-6 flex flex-col h-[220px] shadow-xl">
-                    <h2 className="text-xs font-bold tracking-wider uppercase text-slate-400 font-mono mb-3 flex items-center justify-between">
+                  <section className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col h-[220px] shadow-sm">
+                    <h2 className="text-xs font-bold tracking-wider uppercase text-slate-900 font-mono mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <Terminal className="w-4 h-4 text-slate-400 shrink-0" />
+                        <Terminal className="w-4 h-4 text-indigo-600 shrink-0" />
                         Live Raw Telemetry Streams ({logs.length} events logged)
                       </span>
                     </h2>
 
-                    <div className="flex-1 bg-black/60 rounded-lg p-4 font-mono text-[9px] overflow-y-auto border border-slate-900 flex flex-col gap-2">
+                    <div className="flex-1 bg-slate-900 rounded-xl p-4 font-mono text-[10px] overflow-y-auto border border-slate-800 flex flex-col gap-2 shadow-inner">
                       {logs.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-650">
+                        <div className="h-full flex flex-col items-center justify-center text-slate-500 font-bold">
                           <span>&gt;&gt; STREAM BUFFER EMPTY &lt;&lt;</span>
                         </div>
                       ) : (
                         logs.map((log) => {
-                          const color = getDeviceColor(log.data.device_type);
                           return (
-                            <div key={log.id} className={`border-l border-${color}-800 pl-2 text-slate-400`}>
-                              <span className="text-slate-600">[{log.timestamp}]</span>{' '}
-                              <span className="text-slate-500 font-bold">[{log.data.device_id}]</span>{' '}
-                              <span className="text-slate-300 font-mono truncate">{JSON.stringify(log.data)}</span>
+                            <div key={log.id} className="border-l border-indigo-500 pl-2 text-slate-300">
+                              <span className="text-slate-500">[{log.timestamp}]</span>{' '}
+                              <span className="text-indigo-400 font-bold">[{log.data.device_id}]</span>{' '}
+                              <span className="text-slate-200 font-mono truncate">{JSON.stringify(log.data)}</span>
                             </div>
                           );
                         })
@@ -2174,29 +2228,31 @@ export default function App() {
 
               {/* VIEW D: TESTING HARNESS */}
               {activeTab === 'simulator' && (
-                <div className="max-w-2xl mx-auto bg-[#0c1222] border border-slate-800 rounded-2xl p-6 shadow-xl">
-                  <div className="flex items-center gap-2.5 mb-2 border-b border-slate-800 pb-4">
-                    <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
+                <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-2 border-b border-slate-200 pb-4">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center font-bold shadow-xs">
+                      <Radio className="w-5 h-5 animate-pulse" />
+                    </div>
                     <div>
-                      <h3 className="text-base font-bold orbitron text-white">Device Telemetry Simulator Harness</h3>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Simulates device telemetry payloads directly from your browser.</p>
+                      <h3 className="text-base font-extrabold text-slate-900">Device Telemetry Simulator Harness</h3>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">Simulates device telemetry payloads directly from your browser.</p>
                     </div>
                   </div>
 
                   {devices.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 font-mono text-xs border border-dashed border-slate-800 rounded-xl mt-4">
+                    <div className="text-center py-12 text-slate-500 font-mono text-xs border border-dashed border-slate-300 rounded-xl mt-4 bg-slate-50">
                       You must register at least one device in the Registry tab before testing.
                     </div>
                   ) : (
                     <form onSubmit={handleSimulateTelemetry} className="space-y-6 font-mono text-xs mt-4">
                       {/* Mode Switcher */}
-                      <div className="flex bg-[#080d1a] p-1 rounded-xl border border-slate-800 mb-2">
+                      <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 mb-2">
                         <button
                           type="button"
                           onClick={() => setSimMode('freeform')}
-                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${simMode === 'freeform'
-                              ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                              : 'text-slate-400 hover:text-slate-200'
+                          className={`flex-1 py-2.5 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${simMode === 'freeform'
+                              ? 'bg-white text-indigo-700 shadow-xs border border-slate-200'
+                              : 'text-slate-600 hover:text-slate-900'
                             }`}
                         >
                           <Code className="w-3.5 h-3.5" /> Freeform Custom JSON Payload
@@ -2204,9 +2260,9 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => setSimMode('preset')}
-                          className={`flex-1 py-2 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${simMode === 'preset'
-                              ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                              : 'text-slate-400 hover:text-slate-200'
+                          className={`flex-1 py-2.5 text-center rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${simMode === 'preset'
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
                             }`}
                         >
                           <Radio className="w-3.5 h-3.5" /> Preset Metric Controls
@@ -2215,11 +2271,11 @@ export default function App() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">1. Select Target Device</label>
+                          <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide">1. Select Target Device</label>
                           <select
                             value={simDeviceId}
                             onChange={(e) => setSimDeviceId(e.target.value)}
-                            className="w-full bg-[#0d1321] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer font-bold text-cyan-400"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-indigo-700 focus:bg-white focus:outline-none focus:border-indigo-600 cursor-pointer font-bold"
                           >
                             {devices.map(d => (
                               <option key={d.device_id} value={d.device_id}>
@@ -2230,11 +2286,11 @@ export default function App() {
                         </div>
 
                         <div>
-                          <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wide">2. Status Code</label>
+                          <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide">2. Status Code</label>
                           <select
                             value={simStatus}
                             onChange={(e) => setSimStatus(e.target.value)}
-                            className="w-full bg-[#0d1321] border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer font-bold"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 cursor-pointer font-bold"
                           >
                             <option value="optimal">Optimal (Normal)</option>
                             <option value="warning">Warning Threshold</option>
@@ -2247,19 +2303,19 @@ export default function App() {
                       {simMode === 'freeform' ? (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <label className="block text-slate-400 font-bold uppercase tracking-wide">3. Freeform Device-Agnostic JSON Body</label>
+                            <label className="block text-slate-700 font-bold uppercase tracking-wide">3. Freeform Device-Agnostic JSON Body</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFreeformJsonInput(JSON.stringify({ s1: 45.2, temp_c: 32.1, pressure_bar: 4.8, alert: false }, null, 2))}
-                                className="text-[9px] text-cyan-400 hover:text-white px-2 py-0.5 rounded bg-slate-900 border border-slate-800"
+                                className="text-[9px] text-indigo-700 font-bold hover:bg-indigo-100 px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200"
                               >
                                 Preset A
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setFreeformJsonInput(JSON.stringify({ voltage_v: 231.4, current_a: 8.5, power_kw: 1.96, state: "RUNNING" }, null, 2))}
-                                className="text-[9px] text-cyan-400 hover:text-white px-2 py-0.5 rounded bg-slate-900 border border-slate-800"
+                                className="text-[9px] text-indigo-700 font-bold hover:bg-indigo-100 px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200"
                               >
                                 Preset B
                               </button>
@@ -2269,7 +2325,7 @@ export default function App() {
                             rows={7}
                             value={freeformJsonInput}
                             onChange={(e) => setFreeformJsonInput(e.target.value)}
-                            className="w-full bg-black/80 border border-slate-800 rounded-xl p-4 text-emerald-400 font-mono text-xs focus:outline-none focus:border-cyan-500"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-emerald-400 font-mono text-xs focus:outline-none focus:border-indigo-600 shadow-inner"
                             placeholder="Enter any valid JSON body..."
                           />
                           <p className="text-[10px] text-slate-500 italic">
@@ -2282,31 +2338,31 @@ export default function App() {
                           const type = targetDevice ? targetDevice.device_type : 'pump';
 
                           return (
-                            <div className="bg-[#10192e]/40 border border-slate-850 p-5 rounded-xl space-y-4">
-                              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+                            <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-4">
+                              <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200 pb-2">
                                 3. Telemetry Payload Metric Inputs ({type.toUpperCase()})
                               </h4>
 
                               {type === 'pump' && (
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <label className="block text-slate-500 mb-1">Flow Rate (L/min) [Normal: 15-50]</label>
+                                    <label className="block text-slate-600 mb-1 font-bold">Flow Rate (L/min) [Normal: 15-50]</label>
                                     <input
                                       type="number"
                                       step="0.1"
                                       value={simFields.flow_rate}
                                       onChange={(e) => setSimFields({ ...simFields, flow_rate: parseFloat(e.target.value) })}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-slate-500 mb-1">Pump Temp (°C) [Alarm &gt;60 / &gt;70]</label>
+                                    <label className="block text-slate-600 mb-1 font-bold">Pump Temp (°C) [Alarm &gt;60 / &gt;70]</label>
                                     <input
                                       type="number"
                                       step="0.1"
                                       value={simFields.temperature}
                                       onChange={(e) => setSimFields({ ...simFields, temperature: parseFloat(e.target.value) })}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                     />
                                   </div>
                                 </div>
@@ -2315,23 +2371,23 @@ export default function App() {
                               {type === 'temp_sensor' && (
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <label className="block text-slate-500 mb-1">Ambient Temp (°C) [Alarm &gt;38]</label>
+                                    <label className="block text-slate-600 mb-1 font-bold">Ambient Temp (°C) [Alarm &gt;38]</label>
                                     <input
                                       type="number"
                                       step="0.1"
                                       value={simFields.temperature}
                                       onChange={(e) => setSimFields({ ...simFields, temperature: parseFloat(e.target.value) })}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-slate-500 mb-1">Humidity (%) [Alarm &gt;90]</label>
+                                    <label className="block text-slate-600 mb-1 font-bold">Humidity (%) [Alarm &gt;90]</label>
                                     <input
                                       type="number"
                                       step="1"
                                       value={simFields.humidity}
                                       onChange={(e) => setSimFields({ ...simFields, humidity: parseFloat(e.target.value) })}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                     />
                                   </div>
                                 </div>
@@ -2339,13 +2395,13 @@ export default function App() {
 
                               {type === 'pressure_sensor' && (
                                 <div>
-                                  <label className="block text-slate-500 mb-1">Pipeline Pressure (Bar) [Alarm &gt;4.5 / &gt;5.0]</label>
+                                  <label className="block text-slate-600 mb-1 font-bold">Pipeline Pressure (Bar) [Alarm &gt;4.5 / &gt;5.0]</label>
                                   <input
                                     type="number"
                                     step="0.01"
                                     value={simFields.pressure}
                                     onChange={(e) => setSimFields({ ...simFields, pressure: parseFloat(e.target.value) })}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                   />
                                 </div>
                               )}
@@ -2353,23 +2409,23 @@ export default function App() {
                               {type === 'power_meter' && (
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <label className="block text-slate-500 mb-1">Line Voltage (V)</label>
+                                    <label className="block text-slate-600 mb-1 font-bold">Line Voltage (V)</label>
                                     <input
                                       type="number"
                                       step="0.1"
                                       value={simFields.voltage}
                                       onChange={(e) => setSimFields({ ...simFields, voltage: parseFloat(e.target.value) })}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-slate-500 mb-1">Line Current Draw (A) [Alarm Power &gt;1.2 / &gt;1.5 kW]</label>
+                                    <label className="block text-slate-600 mb-1 font-bold">Line Current Draw (A)</label>
                                     <input
                                       type="number"
                                       step="0.01"
                                       value={simFields.current}
                                       onChange={(e) => setSimFields({ ...simFields, current: parseFloat(e.target.value) })}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-300 font-bold"
+                                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold"
                                     />
                                   </div>
                                 </div>
@@ -2388,14 +2444,14 @@ export default function App() {
                       <button
                         type="submit"
                         disabled={isSimulating}
-                        className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${isSimulating
-                            ? 'bg-slate-850 text-slate-500 cursor-not-allowed border border-slate-800'
-                            : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/25'
+                        className={`w-full py-3.5 rounded-xl font-bold uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 transition-all ${isSimulating
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
                           }`}
                       >
                         {isSimulating ? (
                           <>
-                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <RefreshCw className="w-4 h-4 animate-spin text-white" />
                             Ingesting Mock Telemetry Payload...
                           </>
                         ) : (
@@ -2409,10 +2465,10 @@ export default function App() {
 
             </main>
 
-            {/* Footer */}
-            <footer className="bg-[#0b101c] border-t border-slate-800/80 px-6 py-4 flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            {/* Workspace Footer */}
+            <footer className="bg-white border-t border-slate-200 px-8 py-4 flex items-center justify-between text-xs font-mono text-slate-500">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>Active Operator Session</span>
               </div>
               <div>
