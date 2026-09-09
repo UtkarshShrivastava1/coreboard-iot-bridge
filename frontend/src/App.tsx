@@ -1023,8 +1023,8 @@ export default function App() {
                   </div>
                   {sidebarOpen && (
                     <div className="flex flex-col truncate">
-                      <span className="text-sm font-bold text-slate-900 tracking-wide uppercase">COREBOARD</span>
-                      <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
+                      <span className="text-sm font-extrabold text-slate-900 tracking-wide uppercase">COREBOARD</span>
+                      <span className={`text-xs font-sans uppercase tracking-wider font-bold ${
                         tenant.role === 'ADMIN' ? 'text-[#3368A0]' : 'text-emerald-600'
                       }`}>
                         {tenant.role === 'ADMIN' ? 'TENANT ADMIN' : 'TENANT USER'}
@@ -1035,88 +1035,88 @@ export default function App() {
                 
                 <button 
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-[#C8DFDB]/30 transition-all"
+                  className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/40 transition-all"
                 >
-                  <Menu className="w-4 h-4" />
+                  <Menu className="w-5 h-5" />
                 </button>
               </div>
 
               {/* System Health Status Badge */}
               {sidebarOpen && (
-                <div className="mx-4 my-4 p-3 rounded-xl bg-[#F2EFE7]/60 border border-[#C8DFDB] font-mono text-[10px] space-y-2">
+                <div className="mx-4 my-4 p-3.5 rounded-xl bg-white border border-[#C8DFDB] font-sans text-xs space-y-2.5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 uppercase tracking-wider font-semibold">Gateway Tunnel</span>
+                    <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">Gateway Tunnel</span>
                     {isConnected ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Connected
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-rose-700 font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <span className="inline-flex items-center gap-1.5 text-rose-700 font-bold">
+                        <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                         Offline
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 uppercase tracking-wider font-semibold">Tenant Domain</span>
-                    <span className="text-[#3368A0] font-bold truncate max-w-[100px]">{tenant.tenantId}</span>
+                    <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">Tenant Domain</span>
+                    <span className="text-[#3368A0] font-bold truncate max-w-[110px] text-xs">{tenant.tenantId}</span>
                   </div>
                 </div>
               )}
 
               {/* Navigation Links */}
-              <nav className="px-3 py-2 space-y-1.5 font-mono text-xs">
+              <nav className="px-3 py-2 space-y-2 font-sans text-sm font-semibold">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                  className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                     activeTab === 'overview'
-                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                      ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                      : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
                   }`}
                 >
-                  <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'overview' ? 'text-[#3368A0]' : ''}`} />
+                  <Building2 className={`w-5 h-5 shrink-0 ${activeTab === 'overview' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
                   {sidebarOpen && <span className="truncate">Overview Dashboard</span>}
                 </button>
 
                 <button
                   onClick={() => setActiveTab('telemetry')}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                  className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                     activeTab === 'telemetry'
-                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                      ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                      : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
                   }`}
                 >
-                  <Activity className={`w-4 h-4 shrink-0 ${activeTab === 'telemetry' ? 'text-[#3368A0]' : ''}`} />
+                  <Activity className={`w-5 h-5 shrink-0 ${activeTab === 'telemetry' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
                   {sidebarOpen && <span className="truncate">Telemetry Monitor</span>}
                 </button>
 
                 <button
                   onClick={() => setActiveTab('devices')}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                  className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                     activeTab === 'devices'
-                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                      ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                      : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
                   }`}
                 >
-                  <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'devices' ? 'text-[#3368A0]' : ''}`} />
+                  <Cpu className={`w-5 h-5 shrink-0 ${activeTab === 'devices' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
                   {sidebarOpen && <span className="truncate">Device Registry</span>}
                 </button>
 
                 <button
                   onClick={() => setActiveTab('alarms')}
-                  className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all relative ${
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all relative ${
                     activeTab === 'alarms'
-                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                      ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                      : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
                   }`}
                 >
-                  <div className="flex items-center gap-3 truncate">
-                    <Bell className={`w-4 h-4 shrink-0 ${activeTab === 'alarms' ? 'text-[#3368A0]' : ''}`} />
+                  <div className="flex items-center gap-3.5 truncate">
+                    <Bell className={`w-5 h-5 shrink-0 ${activeTab === 'alarms' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
                     {sidebarOpen && <span className="truncate">Alarms Console</span>}
                   </div>
                   {activeAlarmsCount > 0 && sidebarOpen && (
-                    <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold shrink-0">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold shrink-0">
                       {activeAlarmsCount}
                     </span>
                   )}
@@ -1125,13 +1125,13 @@ export default function App() {
                 {tenant.role === 'ADMIN' && (
                   <button
                     onClick={() => setActiveTab('simulator')}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+                    className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                       activeTab === 'simulator'
-                        ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                        ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                        : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
                     }`}
                   >
-                    <Radio className={`w-4 h-4 shrink-0 ${activeTab === 'simulator' ? 'text-[#3368A0]' : ''}`} />
+                    <Radio className={`w-5 h-5 shrink-0 ${activeTab === 'simulator' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
                     {sidebarOpen && <span className="truncate">Testing Harness</span>}
                   </button>
                 )}
@@ -1139,27 +1139,27 @@ export default function App() {
             </div>
 
             {/* Profile Bar & Logout */}
-            <div className="p-4 border-t border-slate-200 font-mono">
+            <div className="p-4 border-t border-[#C8DFDB] font-sans">
               {sidebarOpen ? (
-                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-2.5 truncate">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#C8DFDB] shadow-xs">
+                  <div className="flex items-center gap-3 truncate">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
                       tenant.role === 'ADMIN' 
-                        ? 'bg-indigo-100 border border-indigo-200 text-indigo-700' 
-                        : 'bg-emerald-100 border border-emerald-200 text-emerald-700'
+                        ? 'bg-[#C8DFDB]/80 border border-[#66A3BF]/40 text-[#3368A0]' 
+                        : 'bg-emerald-100 border border-emerald-300 text-emerald-800'
                     }`}>
                       {tenant.role === 'ADMIN' ? 'TA' : 'TU'}
                     </div>
                     <div className="flex flex-col truncate">
-                      <span className="text-xs font-bold text-slate-900 truncate">{tenant.companyName}</span>
-                      <span className="text-[9px] text-slate-500 truncate">{tenant.email}</span>
+                      <span className="text-sm font-bold text-slate-900 truncate">{tenant.companyName}</span>
+                      <span className="text-xs font-medium text-slate-600 truncate">{tenant.email}</span>
                     </div>
                   </div>
 
                   <button
                     onClick={handleLogout}
                     title="Disconnect Session"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 transition-all shrink-0"
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -1167,9 +1167,9 @@ export default function App() {
               ) : (
                 <button
                   onClick={handleLogout}
-                  className="w-full p-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all flex items-center justify-center border border-slate-200"
+                  className="w-full p-3 rounded-xl bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 transition-all flex items-center justify-center border border-[#C8DFDB]"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-5 h-5" />
                 </button>
               )}
             </div>

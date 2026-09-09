@@ -559,37 +559,37 @@ export default function App() {
 
           {/* System Health Status Badge */}
           {sidebarOpen && (
-            <div className="mx-4 my-4 p-3 rounded-xl bg-[#F2EFE7]/60 border border-[#C8DFDB] font-mono text-[10px] space-y-2">
+            <div className="mx-4 my-4 p-3.5 rounded-xl bg-white border border-[#C8DFDB] font-sans text-xs space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 uppercase tracking-wider font-semibold">AWS IoT Core</span>
-                <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">AWS IoT Core</span>
+                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   Active
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 uppercase tracking-wider font-semibold">DynamoDB Table</span>
-                <span className="text-[#3368A0] font-bold">Single-Table</span>
+                <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">DynamoDB Table</span>
+                <span className="text-[#3368A0] font-bold text-xs">Single-Table</span>
               </div>
             </div>
           )}
 
           {/* Sidebar Menu Items */}
-          <nav className="px-3 py-2 space-y-1.5 font-mono text-xs">
+          <nav className="px-3 py-2 space-y-2 font-sans text-sm font-semibold">
             <button
               onClick={() => setActiveTab('pending_requests')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                 activeTab === 'pending_requests'
-                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
               }`}
             >
-              <Clock className={`w-4 h-4 shrink-0 ${activeTab === 'pending_requests' ? 'text-[#3368A0]' : ''}`} />
+              <Clock className={`w-5 h-5 shrink-0 ${activeTab === 'pending_requests' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && (
                 <div className="flex items-center justify-between w-full">
                   <span className="truncate">Pending Requests</span>
                   {pendingRequests.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold shrink-0">
                       {pendingRequests.length}
                     </span>
                   )}
@@ -599,60 +599,60 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('tenant_manager')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                 activeTab === 'tenant_manager'
-                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
               }`}
             >
-              <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_manager' ? 'text-[#3368A0]' : ''}`} />
+              <Building2 className={`w-5 h-5 shrink-0 ${activeTab === 'tenant_manager' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && <span className="truncate">Tenant Onboarding</span>}
             </button>
 
             <button
               onClick={() => setActiveTab('direct_provision')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                 activeTab === 'direct_provision'
-                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
               }`}
             >
-              <PlusCircle className={`w-4 h-4 shrink-0 ${activeTab === 'direct_provision' ? 'text-[#3368A0]' : ''}`} />
+              <PlusCircle className={`w-5 h-5 shrink-0 ${activeTab === 'direct_provision' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && <span className="truncate">Direct Device Provisioning</span>}
             </button>
 
             <button
               onClick={() => setActiveTab('tenant_profiles')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
                 activeTab === 'tenant_profiles'
-                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
+                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
               }`}
             >
-              <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_profiles' ? 'text-[#3368A0]' : ''}`} />
+              <Cpu className={`w-5 h-5 shrink-0 ${activeTab === 'tenant_profiles' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && <span className="truncate">Tenant Devices & Keys</span>}
             </button>
           </nav>
         </div>
 
         {/* User Profile & Logout Bottom Bar */}
-        <div className="p-4 border-t border-slate-200 font-mono">
+        <div className="p-4 border-t border-[#C8DFDB] font-sans">
           {sidebarOpen ? (
-            <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div className="flex items-center gap-2.5 truncate">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#C8DFDB] shadow-xs">
+              <div className="flex items-center gap-3 truncate">
+                <div className="w-9 h-9 rounded-lg bg-[#C8DFDB]/80 border border-[#66A3BF]/40 text-[#3368A0] flex items-center justify-center font-bold text-xs shrink-0">
                   SA
                 </div>
                 <div className="flex flex-col truncate">
-                  <span className="text-xs font-bold text-slate-900 truncate">SuperAdmin</span>
-                  <span className="text-[9px] text-slate-500 truncate">{superadmin?.email || 'superadmin@coreboard.io'}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">SuperAdmin</span>
+                  <span className="text-xs font-medium text-slate-600 truncate">{superadmin?.email || 'superadmin@coreboard.io'}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleLogout}
                 title="Sign Out"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-700 hover:bg-rose-50 transition-all shrink-0"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -660,9 +660,9 @@ export default function App() {
           ) : (
             <button
               onClick={handleLogout}
-              className="w-full p-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all flex items-center justify-center border border-slate-200"
+              className="w-full p-3 rounded-xl bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 transition-all flex items-center justify-center border border-[#C8DFDB]"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-5 h-5" />
             </button>
           )}
         </div>
