@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
 
   // 1. Connect Device over AWS mTLS MQTT
   socket.on('connect_device', (payload) => {
-    const { endpoint, tenantId, thingName, deviceType, certPem, keyPem } = payload;
+    const { endpoint, tenantId, thingName, deviceType, certPem, keyPem, rootCaPem } = payload;
     const cleanThing = thingName.trim();
 
     console.log(`[Simulator WS] Request to connect device: ${cleanThing} under tenant: ${tenantId}`);
@@ -57,16 +57,17 @@ io.on('connection', (socket) => {
       connectionPool.delete(cleanThing);
     }
 
-    // Default Amazon CA Certificate (can also be overridden if needed)
-    // We read it from our backend certs folder or fallback to a standard Root CA PEM string
-    let caCert;
-    try {
-      caCert = require('fs').readFileSync(
-        require('path').resolve(__dirname, '../backend/certs/AmazonRootCA1.pem')
-      );
-    } catch (e) {
-      console.warn(`[Simulator Server] Failed to read Root CA file. Falling back to default root CA string.`);
-      caCert = process.env.AMAZON_CA_PEM; // fallback in case certs directory is missing
+    // Use uploaded Root CA or read AmazonRootCA1.pem fallback
+    let caCert = rootCaPem;
+    if (!caCert) {
+      try {
+        caCert = require('fs').readFileSync(
+          require('path').resolve(__dirname, '../backend/certs/AmazonRootCA1.pem')
+        );
+      } catch (e) {
+        console.warn(`[Simulator Server] Failed to read Root CA file. Falling back to default root CA string.`);
+        caCert = process.env.AMAZON_CA_PEM; // fallback in case certs directory is missing
+      }
     }
 
     const mqttOptions = {

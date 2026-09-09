@@ -49,8 +49,10 @@ export default function App() {
   
   const [certFileContent, setCertFileContent] = useState('');
   const [keyFileContent, setKeyFileContent] = useState('');
+  const [rootCaFileContent, setRootCaFileContent] = useState('');
   const [certFileName, setCertFileName] = useState('');
   const [keyFileName, setKeyFileName] = useState('');
+  const [rootCaFileName, setRootCaFileName] = useState('');
 
   const [activeDevices, setActiveDevices] = useState<DeviceConnection[]>([]);
   const [selectedDeviceName, setSelectedDeviceName] = useState<string>('');
@@ -289,7 +291,7 @@ export default function App() {
   };
 
   // Handle Certificate Uploads
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, target: 'cert' | 'key') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, target: 'cert' | 'key' | 'rootCa') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -299,9 +301,12 @@ export default function App() {
       if (target === 'cert') {
         setCertFileContent(content);
         setCertFileName(file.name);
-      } else {
+      } else if (target === 'key') {
         setKeyFileContent(content);
         setKeyFileName(file.name);
+      } else {
+        setRootCaFileContent(content);
+        setRootCaFileName(file.name);
       }
     };
     reader.readAsText(file);
@@ -323,7 +328,8 @@ export default function App() {
       thingName,
       deviceType,
       certPem: certFileContent,
-      keyPem: keyFileContent
+      keyPem: keyFileContent,
+      rootCaPem: rootCaFileContent || undefined
     });
 
     addSystemLog(thingName, 'info', `Initiating mTLS connection handshake...`);
@@ -505,26 +511,27 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Device Profile Type</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Device Profile Classification</label>
                 <select 
                   value={deviceType}
                   onChange={(e) => setDeviceType(e.target.value)}
-                  className="w-full text-xs bg-[#0b0f19] border border-[#334155] rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors"
+                  className="w-full text-xs font-bold bg-[#0b0f19] border border-[#334155] rounded px-3 py-2 text-cyan-300 focus:outline-none focus:border-cyan-500 transition-colors"
                 >
-                  <option value="pump">Industrial Water Pump</option>
-                  <option value="temp_sensor">Ambient Weather/Temp Sensor</option>
-                  <option value="pressure_sensor">High-Pressure Pipeline Gauge</option>
-                  <option value="power_meter">Smart Electricity Grid Meter</option>
-                  <option value="smart_lock">Domestic Smart Door Lock</option>
-                  <option value="motion_sensor">Home Security Motion Sensor</option>
-                  <option value="smart_switch">Smart Relay Power Switch</option>
+                  <option value="custom">⚡ Flexible Custom Payload Device (100% Agnostic)</option>
+                  <option value="pump">Industrial Water Pump Profile</option>
+                  <option value="temp_sensor">Ambient Weather/Temp Sensor Profile</option>
+                  <option value="pressure_sensor">High-Pressure Pipeline Gauge Profile</option>
+                  <option value="power_meter">Smart Electricity Grid Meter Profile</option>
+                  <option value="smart_lock">Domestic Smart Door Lock Profile</option>
+                  <option value="motion_sensor">Home Security Motion Sensor Profile</option>
+                  <option value="smart_switch">Smart Relay Power Switch Profile</option>
                 </select>
               </div>
 
-              {/* Cert File Inputs */}
+              {/* Cert File Inputs (mTLS 3-File Package) */}
               <div className="border border-dashed border-slate-700 rounded-lg p-3 space-y-3 bg-[#0b0f19]">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-cyan-500 mb-1">X.509 Certificate (.crt)</label>
+                  <label className="block text-[10px] uppercase font-bold text-cyan-500 mb-1">Device Certificate (.crt)</label>
                   <div className="flex items-center gap-2">
                     <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded text-slate-200 transition-colors flex items-center gap-1.5">
                       <Upload className="h-3 w-3" />
@@ -557,6 +564,28 @@ export default function App() {
                     </label>
                     <span className="text-[10px] text-slate-400 truncate max-w-[180px]">
                       {keyFileName || 'No file selected'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[10px] uppercase font-bold text-cyan-500">Root CA (.pem)</label>
+                    <span className="text-[9px] text-emerald-400 font-mono">Optional (Auto AmazonRootCA1)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded text-slate-200 transition-colors flex items-center gap-1.5">
+                      <Upload className="h-3 w-3" />
+                      Upload File
+                      <input 
+                        type="file" 
+                        accept=".pem,.crt"
+                        onChange={(e) => handleFileChange(e, 'rootCa')}
+                        className="hidden" 
+                      />
+                    </label>
+                    <span className="text-[10px] text-slate-400 truncate max-w-[180px]">
+                      {rootCaFileName || 'AmazonRootCA1.pem (Default)'}
                     </span>
                   </div>
                 </div>
