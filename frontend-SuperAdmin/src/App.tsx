@@ -1691,27 +1691,14 @@ export default function App() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Locking System, Solar Inverter, Pump..."
+                      placeholder="e.g. pump, temp_sensor, smart_lock..."
                       value={directDeviceType}
                       onChange={(e) => setDirectDeviceType(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold mb-2"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold font-mono"
                     />
-                    <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
-                      <span className="text-slate-500 self-center">Presets:</span>
-                      {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setDirectDeviceType(preset)}
-                          className={`px-2 py-0.5 rounded border transition-all ${directDeviceType === preset
-                            ? 'bg-[#3368A0] border-[#3368A0] text-white font-bold'
-                            : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
-                            }`}
-                        >
-                          {preset}
-                        </button>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-slate-500 font-sans mt-1.5 leading-relaxed">
+                      <strong className="text-slate-700 font-semibold">Naming Convention & Examples:</strong> Enter any custom hardware profile identifier. Standard format is lowercase or snake_case (e.g. <code className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-slate-800">pump</code>, <code className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-slate-800">temp_sensor</code>, <code className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-slate-800">smart_lock</code>, <code className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-slate-800">solar_inverter</code>).
+                    </p>
                   </div>
 
                   {/* Download Credentials Box Inside Modal */}
