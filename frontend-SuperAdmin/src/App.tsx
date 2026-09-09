@@ -224,6 +224,9 @@ export default function App() {
       setCredentials(data.credentials);
       setDirectSuccess(data.message || 'Device provisioned successfully.');
       setDirectDeviceId('');
+      if (selectedTenantId) {
+        fetchTenantDevices(selectedTenantId);
+      }
     } catch (err: any) {
       setDirectError(err.message);
       setProvLogs(prev => [...prev, `[ERROR] ${err.message}`]);
@@ -302,6 +305,7 @@ export default function App() {
   const fetchTenantDevices = async (tId: string) => {
     if (!token || !tId) return;
     setSelectedProfileTenantId(tId);
+    setSelectedTenantId(tId);
     setLoadingTenantDevices(true);
     setResetCredentialsData(null);
     setDeviceResetSuccess(null);
