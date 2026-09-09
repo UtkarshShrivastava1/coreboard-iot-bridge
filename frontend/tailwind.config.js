@@ -6,6 +6,14 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          primary: '#3368A0',
+          secondary: '#66A3BF',
+          mint: '#C8DFDB',
+          sand: '#F2EFE7',
+        }
+      },
       animation: {
         'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
@@ -20,3 +28,4 @@ export default {
   },
   plugins: [],
 }
+

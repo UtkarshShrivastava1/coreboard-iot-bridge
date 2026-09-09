@@ -526,32 +526,32 @@ export default function App() {
 
   // Dashboard Layout
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#F2EFE7] text-slate-900 flex font-sans overflow-x-hidden">
       
       {/* 1. Left Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 flex flex-col justify-between shadow-sm ${
+        className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-[#C8DFDB] transition-all duration-300 flex flex-col justify-between shadow-sm ${
           sidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
         <div>
           {/* Brand Header */}
-          <div className="h-16 px-5 border-b border-slate-200 flex items-center justify-between">
+          <div className="h-16 px-5 border-b border-[#C8DFDB] flex items-center justify-between">
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20">
+              <div className="w-10 h-10 rounded-xl bg-[#3368A0] flex items-center justify-center shrink-0 shadow-md shadow-[#3368A0]/20">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               {sidebarOpen && (
                 <div className="flex flex-col truncate">
                   <span className="text-sm font-bold text-slate-900 tracking-wide uppercase">COREBOARD</span>
-                  <span className="text-[9px] font-mono text-indigo-600 uppercase tracking-widest font-bold">SUPERADMIN</span>
+                  <span className="text-[9px] font-mono text-[#3368A0] uppercase tracking-widest font-bold">SUPERADMIN</span>
                 </div>
               )}
             </div>
             
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-[#C8DFDB]/30 transition-all"
             >
               <Menu className="w-4 h-4" />
             </button>
@@ -559,7 +559,7 @@ export default function App() {
 
           {/* System Health Status Badge */}
           {sidebarOpen && (
-            <div className="mx-4 my-4 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-[10px] space-y-2">
+            <div className="mx-4 my-4 p-3 rounded-xl bg-[#F2EFE7]/60 border border-[#C8DFDB] font-mono text-[10px] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-slate-500 uppercase tracking-wider font-semibold">AWS IoT Core</span>
                 <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
@@ -569,7 +569,7 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-500 uppercase tracking-wider font-semibold">DynamoDB Table</span>
-                <span className="text-indigo-600 font-bold">Single-Table</span>
+                <span className="text-[#3368A0] font-bold">Single-Table</span>
               </div>
             </div>
           )}
@@ -580,11 +580,11 @@ export default function App() {
               onClick={() => setActiveTab('pending_requests')}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                 activeTab === 'pending_requests'
-                  ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
               }`}
             >
-              <Clock className={`w-4 h-4 shrink-0 ${activeTab === 'pending_requests' ? 'text-indigo-600' : ''}`} />
+              <Clock className={`w-4 h-4 shrink-0 ${activeTab === 'pending_requests' ? 'text-[#3368A0]' : ''}`} />
               {sidebarOpen && (
                 <div className="flex items-center justify-between w-full">
                   <span className="truncate">Pending Requests</span>
@@ -601,11 +601,11 @@ export default function App() {
               onClick={() => setActiveTab('tenant_manager')}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                 activeTab === 'tenant_manager'
-                  ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
               }`}
             >
-              <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_manager' ? 'text-indigo-600' : ''}`} />
+              <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_manager' ? 'text-[#3368A0]' : ''}`} />
               {sidebarOpen && <span className="truncate">Tenant Onboarding</span>}
             </button>
 
@@ -613,11 +613,11 @@ export default function App() {
               onClick={() => setActiveTab('direct_provision')}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                 activeTab === 'direct_provision'
-                  ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
               }`}
             >
-              <PlusCircle className={`w-4 h-4 shrink-0 ${activeTab === 'direct_provision' ? 'text-indigo-600' : ''}`} />
+              <PlusCircle className={`w-4 h-4 shrink-0 ${activeTab === 'direct_provision' ? 'text-[#3368A0]' : ''}`} />
               {sidebarOpen && <span className="truncate">Direct Device Provisioning</span>}
             </button>
 
@@ -625,11 +625,11 @@ export default function App() {
               onClick={() => setActiveTab('tenant_profiles')}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                 activeTab === 'tenant_profiles'
-                  ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
               }`}
             >
-              <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_profiles' ? 'text-indigo-600' : ''}`} />
+              <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'tenant_profiles' ? 'text-[#3368A0]' : ''}`} />
               {sidebarOpen && <span className="truncate">Tenant Devices & Keys</span>}
             </button>
           </nav>

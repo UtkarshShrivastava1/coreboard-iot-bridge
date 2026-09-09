@@ -1006,26 +1006,26 @@ export default function App() {
 
       {/* SCREEN 2: AUTHENTICATED OPERATOR DASHBOARD */}
       {currentScreen === 'dashboard' && tenant && (
-        <div className="min-h-screen flex bg-[#f8fafc] text-slate-900 font-sans overflow-x-hidden">
+        <div className="min-h-screen flex bg-[#F2EFE7] text-slate-900 font-sans overflow-x-hidden">
 
           {/* Sidebar Navigation */}
           <aside 
-            className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-slate-200 transition-all duration-300 flex flex-col justify-between shadow-sm ${
+            className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-[#C8DFDB] transition-all duration-300 flex flex-col justify-between shadow-sm ${
               sidebarOpen ? 'w-64' : 'w-20'
             }`}
           >
             <div>
               {/* Brand Header */}
-              <div className="h-16 px-5 border-b border-slate-200 flex items-center justify-between">
+              <div className="h-16 px-5 border-b border-[#C8DFDB] flex items-center justify-between">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20">
+                  <div className="w-10 h-10 rounded-xl bg-[#3368A0] flex items-center justify-center shrink-0 shadow-md shadow-[#3368A0]/20">
                     <Building2 className="w-5 h-5 text-white" />
                   </div>
                   {sidebarOpen && (
                     <div className="flex flex-col truncate">
                       <span className="text-sm font-bold text-slate-900 tracking-wide uppercase">COREBOARD</span>
                       <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
-                        tenant.role === 'ADMIN' ? 'text-indigo-600' : 'text-emerald-600'
+                        tenant.role === 'ADMIN' ? 'text-[#3368A0]' : 'text-emerald-600'
                       }`}>
                         {tenant.role === 'ADMIN' ? 'TENANT ADMIN' : 'TENANT USER'}
                       </span>
@@ -1035,7 +1035,7 @@ export default function App() {
                 
                 <button 
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-[#C8DFDB]/30 transition-all"
                 >
                   <Menu className="w-4 h-4" />
                 </button>
@@ -1043,7 +1043,7 @@ export default function App() {
 
               {/* System Health Status Badge */}
               {sidebarOpen && (
-                <div className="mx-4 my-4 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-[10px] space-y-2">
+                <div className="mx-4 my-4 p-3 rounded-xl bg-[#F2EFE7]/60 border border-[#C8DFDB] font-mono text-[10px] space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 uppercase tracking-wider font-semibold">Gateway Tunnel</span>
                     {isConnected ? (
@@ -1060,7 +1060,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 uppercase tracking-wider font-semibold">Tenant Domain</span>
-                    <span className="text-indigo-600 font-bold truncate max-w-[100px]">{tenant.tenantId}</span>
+                    <span className="text-[#3368A0] font-bold truncate max-w-[100px]">{tenant.tenantId}</span>
                   </div>
                 </div>
               )}
@@ -1071,11 +1071,11 @@ export default function App() {
                   onClick={() => setActiveTab('overview')}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                     activeTab === 'overview'
-                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
                   }`}
                 >
-                  <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'overview' ? 'text-indigo-600' : ''}`} />
+                  <Building2 className={`w-4 h-4 shrink-0 ${activeTab === 'overview' ? 'text-[#3368A0]' : ''}`} />
                   {sidebarOpen && <span className="truncate">Overview Dashboard</span>}
                 </button>
 
@@ -1083,11 +1083,11 @@ export default function App() {
                   onClick={() => setActiveTab('telemetry')}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                     activeTab === 'telemetry'
-                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
                   }`}
                 >
-                  <Activity className={`w-4 h-4 shrink-0 ${activeTab === 'telemetry' ? 'text-indigo-600' : ''}`} />
+                  <Activity className={`w-4 h-4 shrink-0 ${activeTab === 'telemetry' ? 'text-[#3368A0]' : ''}`} />
                   {sidebarOpen && <span className="truncate">Telemetry Monitor</span>}
                 </button>
 
@@ -1095,11 +1095,11 @@ export default function App() {
                   onClick={() => setActiveTab('devices')}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                     activeTab === 'devices'
-                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
                   }`}
                 >
-                  <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'devices' ? 'text-indigo-600' : ''}`} />
+                  <Cpu className={`w-4 h-4 shrink-0 ${activeTab === 'devices' ? 'text-[#3368A0]' : ''}`} />
                   {sidebarOpen && <span className="truncate">Device Registry</span>}
                 </button>
 
@@ -1107,12 +1107,12 @@ export default function App() {
                   onClick={() => setActiveTab('alarms')}
                   className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all relative ${
                     activeTab === 'alarms'
-                      ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
                   }`}
                 >
                   <div className="flex items-center gap-3 truncate">
-                    <Bell className={`w-4 h-4 shrink-0 ${activeTab === 'alarms' ? 'text-indigo-600' : ''}`} />
+                    <Bell className={`w-4 h-4 shrink-0 ${activeTab === 'alarms' ? 'text-[#3368A0]' : ''}`} />
                     {sidebarOpen && <span className="truncate">Alarms Console</span>}
                   </div>
                   {activeAlarmsCount > 0 && sidebarOpen && (
@@ -1127,11 +1127,11 @@ export default function App() {
                     onClick={() => setActiveTab('simulator')}
                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative ${
                       activeTab === 'simulator'
-                        ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        ? 'bg-[#C8DFDB]/50 border border-[#66A3BF]/40 text-[#3368A0] font-bold shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-[#C8DFDB]/20'
                     }`}
                   >
-                    <Radio className={`w-4 h-4 shrink-0 ${activeTab === 'simulator' ? 'text-indigo-600' : ''}`} />
+                    <Radio className={`w-4 h-4 shrink-0 ${activeTab === 'simulator' ? 'text-[#3368A0]' : ''}`} />
                     {sidebarOpen && <span className="truncate">Testing Harness</span>}
                   </button>
                 )}
