@@ -733,22 +733,22 @@ export default function App() {
   const activeAlarmsCount = alarms.filter(a => a.status === 'ACTIVE' || a.status === 'ACKNOWLEDGED').length;
 
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-cyan-500 selection:text-white">
 
       {/* Dynamic Toast Notification */}
       {notification && (
-        <div className={`fixed top-5 right-5 z-[100] px-4 py-3 rounded-lg border shadow-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${notification.type === 'error'
-            ? 'bg-rose-950/90 border-rose-500/40 text-rose-300'
+        <div className={`fixed top-5 right-5 z-[100] px-4 py-3 rounded-xl border shadow-xl flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${notification.type === 'error'
+            ? 'bg-rose-50 border-rose-200 text-rose-800'
             : notification.type === 'warning'
-              ? 'bg-amber-950/90 border-amber-500/40 text-amber-300'
-              : 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
+              ? 'bg-amber-50 border-amber-200 text-amber-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
           }`}>
           {notification.type === 'error' ? (
-            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" />
           ) : notification.type === 'warning' ? (
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
           ) : (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           )}
           <span className="text-xs font-mono font-semibold">{notification.message}</span>
         </div>
@@ -756,26 +756,24 @@ export default function App() {
 
       {/* SCREEN 1: LANDING & AUTHENTICATION */}
       {currentScreen === 'landing' && (
-        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+        <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 overflow-hidden bg-white">
 
           {/* Promo Presentation Panel (Left 50%) */}
-          <div className="lg:col-span-7 bg-[#0b101c] border-r border-slate-800/60 p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-950/20 via-[#070b13] to-[#070b13] -z-10"></div>
-            <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="lg:col-span-7 bg-slate-50/90 border-r border-slate-200/80 p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             {/* Brand Header */}
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-bold text-black text-sm tracking-wider orbitron">
+                <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-sm tracking-wider shadow-sm">
                   CB
                 </div>
-                <div className="absolute -inset-0.5 bg-gradient-to-tr from-cyan-500 to-indigo-500 rounded-lg blur opacity-40 -z-10 animate-pulse"></div>
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-wider text-slate-100 uppercase orbitron">
+                <h1 className="text-lg font-extrabold tracking-wider text-slate-900 uppercase">
                   COREBOARD
                 </h1>
-                <p className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">
+                <p className="text-[10px] text-indigo-600 font-mono tracking-widest uppercase font-bold">
                   Multi-Tenant IoT Suite
                 </p>
               </div>
@@ -783,51 +781,49 @@ export default function App() {
 
             {/* Core Pitch */}
             <div className="my-auto py-12 max-w-lg">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/25 text-cyan-400 font-mono text-[10px] font-bold uppercase tracking-wider mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
-                Now Live • Release v3.2.0 (Alarms Engine)
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 font-mono text-[10px] font-bold uppercase tracking-wider mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-600 animate-ping"></span>
+                Now Live • Enterprise Release (Alarms Engine)
               </div>
 
-              <h2 className="text-4xl lg:text-5xl font-black orbitron leading-tight tracking-wide text-white mb-6">
-                Architectural <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400">Freedom</span> for Industrial IoT.
+              <h2 className="text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-slate-900 mb-6">
+                Architectural <span className="text-indigo-600">Freedom</span> for Industrial IoT.
               </h2>
 
-              <p className="text-slate-400 font-mono text-sm leading-relaxed mb-8">
+              <p className="text-slate-600 font-sans text-sm leading-relaxed mb-8 font-medium">
                 Connect and manage physical devices over secure mTLS tunnels, stream live metrics in milliseconds, and build bespoke telemetry control dashboards tailored exactly to your workflow.
               </p>
 
               {/* Highlights */}
-              <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-900">
+              <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200">
                 <div>
-                  <div className="text-2xl font-bold orbitron text-white">99.9%</div>
-                  <div className="text-[10px] uppercase font-mono text-slate-500 tracking-wider">Device Stream Uptime</div>
+                  <div className="text-2xl font-black orbitron text-slate-900">99.9%</div>
+                  <div className="text-[10px] uppercase font-mono text-slate-500 tracking-wider font-semibold">Device Stream Uptime</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold orbitron text-cyan-400">Zero Trust</div>
-                  <div className="text-[10px] uppercase font-mono text-slate-500 tracking-wider">mTLS Client Security</div>
+                  <div className="text-2xl font-black orbitron text-indigo-600">Zero Trust</div>
+                  <div className="text-[10px] uppercase font-mono text-slate-500 tracking-wider font-semibold">mTLS Client Security</div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="text-[10px] font-mono text-slate-600">
+            <div className="text-[10px] font-mono text-slate-500">
               © {new Date().getFullYear()} Coreboard Inc. Powered by AWS IoT Core & DynamoDB.
             </div>
           </div>
 
           {/* Authentication Panel (Right 50%) */}
-          <div className="lg:col-span-5 bg-[#070b13] p-8 lg:p-16 flex flex-col justify-center relative">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
+          <div className="lg:col-span-5 bg-white p-8 lg:p-16 flex flex-col justify-center relative">
             <div className="w-full max-w-md mx-auto">
 
               {/* Form Tab Header */}
-              <div className="flex bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 mb-8 max-w-[240px]">
+              <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 mb-8 max-w-[240px]">
                 <button
                   onClick={() => { setAuthTab('login'); setAuthError(null); }}
                   className={`flex-1 py-2 text-center rounded-lg text-xs font-bold font-mono transition-all ${authTab === 'login'
-                      ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/60'
+                      : 'text-slate-500 hover:text-slate-900'
                     }`}
                 >
                   TENANT LOGIN
@@ -835,8 +831,8 @@ export default function App() {
                 <button
                   onClick={() => { setAuthTab('signup'); setAuthError(null); }}
                   className={`flex-1 py-2 text-center rounded-lg text-xs font-bold font-mono transition-all ${authTab === 'signup'
-                      ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
                     }`}
                 >
                   SIGN UP
@@ -845,7 +841,7 @@ export default function App() {
 
               {/* Header Title */}
               <div className="mb-6">
-                <h3 className="text-2xl font-bold orbitron text-white">
+                <h3 className="text-2xl font-extrabold text-slate-900">
                   {authTab === 'login' ? 'Welcome Back' : 'Create Tenant Profile'}
                 </h3>
                 <p className="text-xs font-mono text-slate-500 mt-1">
@@ -857,14 +853,14 @@ export default function App() {
 
               {/* Auth Errors & Success Notifications */}
               {authError && (
-                <div className="bg-rose-950/50 border border-rose-500/30 text-rose-300 p-3 rounded-lg text-xs font-mono mb-6 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-mono mb-6 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>{authError}</span>
                 </div>
               )}
               {authSuccess && (
-                <div className="bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 p-3 rounded-lg text-xs font-mono mb-6 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-mono mb-6 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                   <span>{authSuccess}</span>
                 </div>
               )}
@@ -874,13 +870,13 @@ export default function App() {
                 {authTab === 'signup' && (
                   <>
                     {/* Role Selector */}
-                    <div className="flex bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 mb-4 max-w-[240px]">
+                    <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 mb-4 max-w-[240px]">
                       <button
                         type="button"
                         onClick={() => { setSignupRole('ADMIN'); setAuthError(null); }}
                         className={`flex-1 py-1.5 text-center rounded-lg text-[10px] font-bold font-mono transition-all ${signupRole === 'ADMIN'
-                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         Tenant Admin
@@ -889,8 +885,8 @@ export default function App() {
                         type="button"
                         onClick={() => { setSignupRole('USER'); setAuthError(null); }}
                         className={`flex-1 py-1.5 text-center rounded-lg text-[10px] font-bold font-mono transition-all ${signupRole === 'USER'
-                            ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
                           }`}
                       >
                         Tenant User
@@ -898,9 +894,9 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Company / Organization Name</label>
+                      <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wider text-[10px]">Company / Organization Name</label>
                       <div className="relative">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <input
                           type="text"
                           required
@@ -916,28 +912,28 @@ export default function App() {
                               .replace(/^-+|-+$/g, '');
                             setTenantId(slug);
                           }}
-                          className="w-full bg-[#0d1321] border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-slate-200 placeholder:text-slate-655 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-semibold"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-semibold"
                         />
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1.5 pl-1">
+                      <p className="text-[10px] text-slate-500 mt-1.5 pl-1 font-sans">
                         Your official company or organization name. Used for display branding across your dashboard.
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Tenant Domain ID</label>
+                      <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wider text-[10px]">Tenant Domain ID</label>
                       <div className="relative">
-                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <input
                           type="text"
                           required
                           placeholder="e.g. acme-corp"
                           value={tenantId}
                           onChange={(e) => setTenantId(e.target.value)}
-                          className="w-full bg-[#0d1321] border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-slate-200 placeholder:text-slate-655 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-semibold"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-semibold"
                         />
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1.5 pl-1">
+                      <p className="text-[10px] text-slate-500 mt-1.5 pl-1 font-sans">
                         A unique URL-safe prefix (e.g., acme-corp) to partition your database entries, devices, and MQTT streams.
                       </p>
                     </div>
@@ -946,47 +942,47 @@ export default function App() {
 
                 {authTab === 'login' && (
                   <div>
-                    <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Tenant Domain ID</label>
+                    <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wider text-[10px]">Tenant Domain ID</label>
                     <div className="relative">
-                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                       <input
                         type="text"
                         required
                         placeholder="e.g. acme-corp"
                         value={tenantId}
                         onChange={(e) => setTenantId(e.target.value)}
-                        className="w-full bg-[#0d1321] border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-semibold"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-semibold"
                       />
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Administrator Email</label>
+                  <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wider text-[10px]">Administrator Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
                       type="email"
                       required
                       placeholder="e.g. admin@acme.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-[#0d1321] border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-semibold"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-semibold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Secret Password</label>
+                  <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wider text-[10px]">Secret Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
                       type="password"
                       required
                       placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-[#0d1321] border border-slate-800 rounded-xl py-3.5 pl-11 pr-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-semibold"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl py-3.5 pl-11 pr-4 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-semibold"
                     />
                   </div>
                 </div>
@@ -994,16 +990,16 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider mt-4 shadow-lg flex items-center justify-center gap-2 transition-all ${isSubmitting
-                      ? 'bg-slate-850 text-slate-500 cursor-not-allowed'
+                  className={`w-full py-3.5 rounded-xl font-bold uppercase tracking-wider mt-4 shadow-sm flex items-center justify-center gap-2 transition-all ${isSubmitting
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                       : authTab === 'login'
-                        ? 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/20'
-                        : 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-indigo-500/20'
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                     }`}
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
                       Authenticating Tunnel...
                     </>
                   ) : authTab === 'login' ? (
@@ -1020,26 +1016,26 @@ export default function App() {
 
       {/* SCREEN 2: AUTHENTICATED OPERATOR DASHBOARD */}
       {currentScreen === 'dashboard' && tenant && (
-        <div className="min-h-screen flex flex-col md:flex-row relative">
+        <div className="min-h-screen flex flex-col md:flex-row relative bg-[#f8fafc]">
 
           {/* Sidebar Navigation */}
-          <aside className={`bg-[#0b101c] border-r border-slate-800/80 transition-all duration-300 flex flex-col shrink-0 z-40 ${sidebarOpen ? 'w-64' : 'w-20'
+          <aside className={`bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shrink-0 z-40 shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'
             }`}>
             {/* Header branding in sidebar */}
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-bold text-black orbitron shrink-0">
+                <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold text-white orbitron shrink-0 shadow-sm">
                   CB
                 </div>
                 {sidebarOpen && (
-                  <div className="font-bold orbitron text-white text-xs tracking-wider leading-none">
+                  <div className="font-bold text-slate-900 text-xs tracking-wider leading-none uppercase">
                     COREBOARD
                   </div>
                 )}
               </div>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-slate-500 hover:text-white transition-all bg-slate-900/50 p-1 rounded border border-slate-800/50 hidden md:block"
+                className="text-slate-500 hover:text-slate-900 transition-all bg-slate-100 p-1 rounded border border-slate-200 hidden md:block"
               >
                 {sidebarOpen ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
               </button>
