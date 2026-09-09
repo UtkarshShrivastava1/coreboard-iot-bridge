@@ -35,6 +35,8 @@ interface LogMessage {
   text?: string;
 }
 
+const MAIN_BACKEND_URL = import.meta.env.VITE_MAIN_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
 export default function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [endpoint, setEndpoint] = useState('a3jn1jb4u5t66x-ats.iot.ap-south-1.amazonaws.com');
@@ -190,7 +192,7 @@ export default function App() {
     const getTenants = async () => {
       setLoadingTenants(true);
       try {
-        const res = await fetch('http://localhost:4000/api/public/tenants');
+        const res = await fetch(`${MAIN_BACKEND_URL}/api/public/tenants`);
         if (res.ok) {
           const data = await res.json();
           setFetchedTenants(data);
@@ -217,7 +219,7 @@ export default function App() {
     const getDevices = async () => {
       setLoadingDevices(true);
       try {
-        const res = await fetch(`http://localhost:4000/api/public/tenants/${tenantId}/devices`);
+        const res = await fetch(`${MAIN_BACKEND_URL}/api/public/tenants/${tenantId}/devices`);
         if (res.ok) {
           const data = await res.json();
           setFetchedDevices(data);
