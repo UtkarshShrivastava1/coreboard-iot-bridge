@@ -1124,6 +1124,85 @@ app.post('/api/superadmin/tenants/onboard', authenticateToken, requireRole(['SUP
   }
 });
 
+// 3d-3. Permanently Delete Tenant Partition (Superadmin only)
+app.delete('/api/superadmin/tenants/:tenantId', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
+  const { tenantId } = req.params;
+  const cleanTenantId = tenantId.trim().toLowerCase();
+
+  if (cleanTenantId === 'superadmin') {
+    return res.status(400).json({ error: 'Cannot delete system superadmin tenant partition.' });
+  }
+
+  const pk = `TENANT#${cleanTenantId}`;
+
+  try {
+    // 1. Query all items belonging to this tenant partition
+    const tenantItemsRes = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk',
+      ExpressionAttributeValues: { ':pk': pk }
+    }));
+
+    const items = tenantItemsRes.Items || [];
+
+    // 2. Cleanup AWS IoT Core Things & Certificates for any registered devices
+    for (const item of items) {
+      if (item.timestamp && item.timestamp.startsWith('METADATA#DEVICE#')) {
+        const deviceId = item.timestamp.replace('METADATA#DEVICE#', '');
+        try {
+          const principals = await iotClient.send(new ListThingPrincipalsCommand({
+            thingName: deviceId
+          }));
+          for (const principal of (principals.principals || [])) {
+            const certId = principal.split('/').pop();
+            console.log(`[Superadmin Tenant Delete] Detaching principal ${principal} from Thing ${deviceId}...`);
+            await iotClient.send(new DetachThingPrincipalCommand({
+              thingName: deviceId,
+              principal: principal
+            }));
+            await iotClient.send(new UpdateCertificateCommand({
+              certificateId: certId,
+              newStatus: 'INACTIVE'
+            }));
+            await iotClient.send(new DeleteCertificateCommand({
+              certificateId: certId
+            }));
+            console.log(`[Superadmin Tenant Delete] Deleted cert ${certId}`);
+          }
+        } catch (err) {
+          console.warn(`[Superadmin Tenant Delete Warning] Failed clearing principals for ${deviceId}:`, err.message);
+        }
+
+        try {
+          await iotClient.send(new DeleteThingCommand({
+            thingName: deviceId
+          }));
+          console.log(`[Superadmin Tenant Delete] Deleted Thing: ${deviceId}`);
+        } catch (err) {
+          console.warn(`[Superadmin Tenant Delete Warning] Failed deleting Thing ${deviceId}:`, err.message);
+        }
+      }
+    }
+
+    // 3. Delete all DynamoDB partition items
+    for (const item of items) {
+      await ddbDocClient.send(new DeleteCommand({
+        TableName: DYNAMODB_TABLE,
+        Key: {
+          device_id: pk,
+          timestamp: item.timestamp
+        }
+      }));
+    }
+
+    console.log(`[Superadmin Tenant Delete] Tenant ${cleanTenantId} and ${items.length} items permanently deleted.`);
+    res.json({ success: true, message: `Tenant ${cleanTenantId} and all associated items permanently deleted.` });
+  } catch (error) {
+    console.error('[Delete Tenant Error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 3e. Direct Device Provisioning Without Request (Superadmin only)
 app.post('/api/superadmin/tenants/:tenantId/devices/provision', authenticateToken, requireRole(['SUPERADMIN']), async (req, res) => {
   const { tenantId } = req.params;

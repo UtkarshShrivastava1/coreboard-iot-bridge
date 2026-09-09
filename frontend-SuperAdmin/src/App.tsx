@@ -381,9 +381,33 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || 'Onboarding failed.');
       setOnboardSuccess(`Tenant ${superadminCompanyName} (${superadminTenantId}) onboarded successfully!`);
       setSuperadminCompanyName('');
-      setSuperadminTenantId('');
-      setSuperadminEmail('');
-      setSuperadminPassword('');
+      console.log(`[Superadmin] Onboarded new tenant: ${superadminCompanyName} (${superadminTenantId})`);
+      fetchTenants();
+    } catch (err: any) {
+      setOnboardError(err.message);
+    }
+  };
+
+  // Permanently Delete Tenant
+  const handleDeleteTenant = async (tId: string, companyName: string) => {
+    if (!token) return;
+    if (!window.confirm(`⚠️ PERMANENT DELETION WARNING!\n\nAre you sure you want to permanently delete tenant "${companyName}" (${tId})?\n\nThis will permanently erase all associated DynamoDB partition records (metadata, users, telemetry, alarms) and clean up AWS IoT Core Things & Certificates.\n\nThis action CANNOT be undone. Proceed?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/superadmin/tenants/${tId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete tenant.');
+
+      setOnboardSuccess(`Tenant "${companyName}" (${tId}) has been permanently deleted.`);
+      if (selectedTenantId === tId) {
+        setSelectedTenantId('');
+      }
       fetchTenants();
     } catch (err: any) {
       setOnboardError(err.message);
@@ -1071,16 +1095,26 @@ export default function App() {
                                   </span>
                                 </td>
                                 <td className="p-3 text-right">
-                                  <button
-                                    onClick={() => {
-                                      setActiveTab('tenant_profiles');
-                                      fetchTenantDevices(t.tenantId);
-                                    }}
-                                    className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#C8DFDB]/30 border border-[#C8DFDB] text-[#3368A0] text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <span>Devices</span>
-                                    <ChevronRight className="w-3.5 h-3.5 text-[#3368A0]" />
-                                  </button>
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setActiveTab('tenant_profiles');
+                                        fetchTenantDevices(t.tenantId);
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#C8DFDB]/30 border border-[#C8DFDB] text-[#3368A0] text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <span>Devices</span>
+                                      <ChevronRight className="w-3.5 h-3.5 text-[#3368A0]" />
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleDeleteTenant(t.tenantId, t.companyName)}
+                                      title={`Permanently Delete Tenant ${t.companyName} (${t.tenantId})`}
+                                      className="p-1.5 rounded-lg bg-white hover:bg-rose-50 border border-[#C8DFDB] hover:border-rose-300 text-slate-500 hover:text-rose-600 transition-all shadow-xs shrink-0 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-rose-500" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
