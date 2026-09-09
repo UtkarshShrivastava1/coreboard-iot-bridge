@@ -91,6 +91,16 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'overview' | 'telemetry' | 'devices' | 'alarms' | 'simulator'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Copy to clipboard feedback state
+  const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
+
+  const handleCopyDomain = (domainId: string) => {
+    if (!domainId) return;
+    navigator.clipboard.writeText(domainId);
+    setCopiedDomain(domainId);
+    setTimeout(() => setCopiedDomain(null), 2000);
+  };
+
   // Tenant Signup State
   const [signupRole, setSignupRole] = useState<'ADMIN' | 'USER'>('ADMIN');
 
@@ -1043,7 +1053,7 @@ export default function App() {
 
               {/* System Health Status Badge */}
               {sidebarOpen && (
-                <div className="mx-4 my-4 p-3.5 rounded-xl bg-white border border-[#C8DFDB] font-sans text-xs space-y-2.5 shadow-xs">
+                <div className="mx-4 my-4 p-3.5 rounded-xl bg-white border border-[#C8DFDB] font-sans text-xs space-y-3 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">Gateway Tunnel</span>
                     {isConnected ? (
@@ -1058,9 +1068,29 @@ export default function App() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">Tenant Domain</span>
-                    <span className="text-[#3368A0] font-bold truncate max-w-[110px] text-xs">{tenant.tenantId}</span>
+
+                  {/* Tenant Domain Full Visibility & Click-To-Copy */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">Tenant Domain</span>
+                      {copiedDomain === tenant.tenantId && (
+                        <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Copied!
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleCopyDomain(tenant.tenantId)}
+                      title="Click to copy Tenant Domain ID"
+                      className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#F2EFE7]/80 hover:bg-[#C8DFDB]/40 border border-[#C8DFDB] text-[#3368A0] transition-all group text-left cursor-pointer"
+                    >
+                      <span className="font-mono text-xs font-bold break-all">{tenant.tenantId}</span>
+                      {copiedDomain === tenant.tenantId ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5 text-[#66A3BF] group-hover:text-[#3368A0] shrink-0" />
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
@@ -1189,9 +1219,18 @@ export default function App() {
                   {activeTab === 'alarms' && 'Real-Time Alarms Console'}
                   {activeTab === 'simulator' && 'mTLS Telemetry Testing Harness'}
                 </h1>
-                <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider">
-                  {tenant.companyName} ({tenant.tenantId})
-                </span>
+                <button
+                  onClick={() => handleCopyDomain(tenant.tenantId)}
+                  title="Click to copy Tenant Domain ID"
+                  className="px-3 py-1 bg-[#C8DFDB]/50 hover:bg-[#C8DFDB]/80 border border-[#66A3BF]/40 text-[#3368A0] rounded-full font-mono text-xs font-bold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>{tenant.companyName} ({tenant.tenantId})</span>
+                  {copiedDomain === tenant.tenantId ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-[#66A3BF] shrink-0" />
+                  )}
+                </button>
               </div>
 
               {/* Status & Inspector Controls */}

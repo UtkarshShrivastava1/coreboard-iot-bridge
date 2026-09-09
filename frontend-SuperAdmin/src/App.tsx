@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Menu,
   KeyRound,
-  PlusCircle
+  PlusCircle,
+  Copy,
+  Check
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -83,6 +85,16 @@ export default function App() {
   const [deviceResetError, setDeviceResetError] = useState<string | null>(null);
   const [deviceDeleteSuccess, setDeviceDeleteSuccess] = useState<string | null>(null);
   const [deviceDeleteError, setDeviceDeleteError] = useState<string | null>(null);
+
+  // Copy feedback state
+  const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
+
+  const handleCopyDomain = (domainId: string) => {
+    if (!domainId) return;
+    navigator.clipboard.writeText(domainId);
+    setCopiedDomain(domainId);
+    setTimeout(() => setCopiedDomain(null), 2000);
+  };
 
   // Direct Provisioning & Tenants List State
   const [tenants, setTenants] = useState<{ tenantId: string; companyName: string; adminEmail: string }[]>([]);
@@ -559,7 +571,7 @@ export default function App() {
 
           {/* System Health Status Badge */}
           {sidebarOpen && (
-            <div className="mx-4 my-4 p-3.5 rounded-xl bg-white border border-[#C8DFDB] font-sans text-xs space-y-2.5 shadow-xs">
+            <div className="mx-4 my-4 p-3.5 rounded-xl bg-white border border-[#C8DFDB] font-sans text-xs space-y-3 shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">AWS IoT Core</span>
                 <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold">
@@ -571,6 +583,32 @@ export default function App() {
                 <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">DynamoDB Table</span>
                 <span className="text-[#3368A0] font-bold text-xs">Single-Table</span>
               </div>
+
+              {/* SuperAdmin Global Tenant Domain Quick Copy */}
+              {selectedTenantId && (
+                <div className="space-y-1 pt-1 border-t border-[#C8DFDB]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 uppercase tracking-wider font-bold text-[11px]">Active Partition</span>
+                    {copiedDomain === selectedTenantId && (
+                      <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Copied!
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleCopyDomain(selectedTenantId)}
+                    title="Click to copy selected Tenant Domain ID"
+                    className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#F2EFE7]/80 hover:bg-[#C8DFDB]/40 border border-[#C8DFDB] text-[#3368A0] transition-all group text-left cursor-pointer"
+                  >
+                    <span className="font-mono text-xs font-bold break-all">{selectedTenantId}</span>
+                    {copiedDomain === selectedTenantId ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-[#66A3BF] group-hover:text-[#3368A0] shrink-0" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -973,8 +1011,21 @@ export default function App() {
                               ACTIVE
                             </span>
                           </div>
-                          <p className="text-[10px] text-indigo-600 font-mono mb-1 font-semibold">Partition: TENANT#{t.tenantId}</p>
-                          <p className="text-[10px] text-slate-600 font-mono">Admin: {t.adminEmail}</p>
+                          <div className="mb-2">
+                            <button
+                              onClick={() => handleCopyDomain(t.tenantId)}
+                              title="Click to copy Tenant Domain ID"
+                              className="w-full flex items-center justify-between gap-1.5 px-2 py-1 rounded bg-[#C8DFDB]/40 hover:bg-[#C8DFDB]/80 border border-[#66A3BF]/40 text-[#3368A0] font-mono text-xs font-bold transition-all text-left group cursor-pointer"
+                            >
+                              <span className="break-all">TENANT#{t.tenantId}</span>
+                              {copiedDomain === t.tenantId ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-[#66A3BF] group-hover:text-[#3368A0] shrink-0" />
+                              )}
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-600 font-medium">Admin: {t.adminEmail}</p>
                         </div>
 
                         <button
