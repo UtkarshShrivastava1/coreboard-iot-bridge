@@ -1538,6 +1538,9 @@ app.post('/api/tenants/:tenantId/devices/:deviceId/telemetry/simulate', authenti
   const timestamp = Date.now();
 
   try {
+    // 100% Device-Agnostic: Extract all non-metadata fields as custom device data
+    const { device_id, device_type, timestamp: rawTs, status, tenant_id, ...customData } = payload;
+
     const dbItem = {
       device_id: `TENANT#${cleanTenantId}`,
       timestamp: `DEVICE#${cleanDeviceId}#TIMESTAMP#${timestamp}`,
@@ -1545,7 +1548,7 @@ app.post('/api/tenants/:tenantId/devices/:deviceId/telemetry/simulate', authenti
       raw_timestamp: timestamp,
       device_type: payload.device_type || 'unknown',
       status: payload.status || 'optimal',
-      data: {
+      data: Object.keys(customData).length > 0 ? customData : {
         flow_rate: payload.flow_rate,
         temperature: payload.temperature,
         humidity: payload.humidity,
@@ -1589,6 +1592,65 @@ app.post('/api/tenants/:tenantId/devices/:deviceId/telemetry/simulate', authenti
   } catch (error) {
     console.error('[Telemetry Simulation Error]:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// 6c. Public Simulator Helper Endpoints (Unauthenticated for standalone Simulator UI)
+app.get('/api/public/tenants', async (req, res) => {
+  try {
+    const response = await ddbDocClient.send(new ScanCommand({
+      TableName: DYNAMODB_TABLE,
+      FilterExpression: 'begins_with(#sk, :sk_prefix)',
+      ExpressionAttributeNames: { '#sk': 'timestamp' },
+      ExpressionAttributeValues: { ':sk_prefix': 'USER#' }
+    }));
+    
+    const tenantMap = new Map();
+    (response.Items || []).forEach(item => {
+      const tid = item.device_id.replace('TENANT#', '');
+      if (tid !== 'superadmin' && !tenantMap.has(tid)) {
+        tenantMap.set(tid, {
+          tenantId: tid,
+          companyName: item.company_name || tid
+        });
+      }
+    });
+    
+    res.json(Array.from(tenantMap.values()));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/public/tenants/:tenantId/devices', async (req, res) => {
+  const { tenantId } = req.params;
+  const cleanTenantId = tenantId.trim().toLowerCase();
+  try {
+    const response = await ddbDocClient.send(new QueryCommand({
+      TableName: DYNAMODB_TABLE,
+      KeyConditionExpression: 'device_id = :pk AND begins_with(#sk, :sk_prefix)',
+      ExpressionAttributeNames: { '#sk': 'timestamp' },
+      ExpressionAttributeValues: {
+        ':pk': `TENANT#${cleanTenantId}`,
+        ':sk_prefix': 'METADATA#DEVICE#'
+      }
+    }));
+    
+    const devices = (response.Items || []).map(item => {
+      const devId = item.actual_device_id || (item.timestamp ? item.timestamp.replace('METADATA#DEVICE#', '') : 'unknown-device');
+      return {
+        deviceId: devId,
+        device_id: devId,
+        actual_device_id: devId,
+        deviceType: item.device_type || 'unknown',
+        device_type: item.device_type || 'unknown',
+        status: item.status || 'inactive'
+      };
+    });
+    
+    res.json(devices);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

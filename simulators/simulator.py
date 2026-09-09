@@ -89,7 +89,28 @@ def validate_setup():
         sys.exit(1)
 
 def generate_telemetry(device_id, device_type):
-    """Generates realistic telemetry payload based on the hardware classification."""
+    """Generates realistic telemetry payload supporting custom freeform JSON schemas."""
+    custom_raw = os.getenv("CUSTOM_PAYLOAD_JSON")
+    if custom_raw:
+        try:
+            custom_dict = json.loads(custom_raw)
+            # Add dynamic noise to numerical fields in custom payload
+            fluctuated = {}
+            for k, v in custom_dict.items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    noise_scale = abs(v) * 0.02 if v != 0 else 0.5
+                    fluctuated[k] = round(v + random.uniform(-noise_scale, noise_scale), 2)
+                else:
+                    fluctuated[k] = v
+            return {
+                "device_id": device_id,
+                "device_type": device_type,
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                **fluctuated
+            }
+        except Exception as e:
+            logger.warning(f"Failed to parse CUSTOM_PAYLOAD_JSON: {e}. Falling back to default schema.")
+
     data = {"status": "optimal"}
     
     if device_type == "pump":
@@ -97,7 +118,6 @@ def generate_telemetry(device_id, device_type):
             "flow_rate": round(random.uniform(22.0, 27.0), 1),
             "temperature": round(random.uniform(30.0, 35.0), 1)
         })
-        # Occasional warning trigger
         if random.random() < 0.05:
             data["temperature"] = round(random.uniform(62.0, 68.0), 1)
             data["status"] = "warning"
@@ -110,24 +130,24 @@ def generate_telemetry(device_id, device_type):
         data.update({
             "pressure": round(random.uniform(3.5, 4.3), 2)
         })
-        # Occasional critical trigger
         if random.random() < 0.05:
             data["pressure"] = round(random.uniform(5.1, 5.5), 2)
             data["status"] = "high"
     elif device_type == "power_meter":
         voltage = round(random.uniform(228.0, 232.0), 1)
         current = round(random.uniform(4.0, 5.5), 2)
-        power = round((voltage * current) / 1000.0, 3) # kW
+        power = round((voltage * current) / 1000.0, 3)
         data.update({
             "voltage": voltage,
             "current": current,
             "power": power
         })
     else:
-        # Generic payload fallback
+        # Default device-agnostic fallback payload (e.g. s1, temp_c, batt_v)
         data.update({
-            "metric_a": round(random.uniform(10, 100), 2),
-            "metric_b": round(random.uniform(100, 1000), 2)
+            "s1": round(random.uniform(20.0, 30.0), 1),
+            "temp_c": round(random.uniform(30.0, 35.0), 1),
+            "batt_v": round(random.uniform(3.6, 4.2), 2)
         })
         
     return {

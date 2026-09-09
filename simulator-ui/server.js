@@ -225,21 +225,30 @@ io.on('connection', (socket) => {
       dev.autoInterval = setInterval(() => {
         const publishTopic = getPublishTopic(dev.tenantId, cleanThing);
         
-        // Generate simulated telemetry based on device type with noise
+        // Generate simulated telemetry based on device type or freeform payload with noise
         const simulated = { ...dev.lastData };
-        if (dev.deviceType === 'pump') {
-          // flow rate noise (±0.5), temp noise (±0.2)
-          simulated.flow_rate = parseFloat((Number(simulated.flow_rate || 25.0) + (Math.random() - 0.5)).toFixed(1));
-          simulated.temperature = parseFloat((Number(simulated.temperature || 32.0) + (Math.random() - 0.5) * 0.4).toFixed(1));
-        } else if (dev.deviceType === 'temp_sensor') {
-          simulated.temperature = parseFloat((Number(simulated.temperature || 24.0) + (Math.random() - 0.5) * 0.3).toFixed(1));
-          simulated.humidity = parseFloat((Number(simulated.humidity || 55.0) + (Math.random() - 0.5)).toFixed(1));
-        } else if (dev.deviceType === 'pressure_sensor') {
-          simulated.pressure = parseFloat((Number(simulated.pressure || 4.0) + (Math.random() - 0.5) * 0.1).toFixed(2));
-        } else if (dev.deviceType === 'power_meter') {
-          simulated.power = parseFloat((Number(simulated.power || 1.1) + (Math.random() - 0.5) * 0.05).toFixed(3));
-          simulated.voltage = parseFloat((Number(simulated.voltage || 230.0) + (Math.random() - 0.5) * 0.8).toFixed(1));
-          simulated.current = parseFloat((Number(simulated.current || 4.8) + (Math.random() - 0.5) * 0.1).toFixed(2));
+        
+        // Dynamically add noise to all numeric keys in the payload (Device-Agnostic Engine)
+        Object.keys(simulated).forEach(key => {
+          if (key !== 'device_id' && key !== 'device_type' && key !== 'timestamp' && key !== 'status') {
+            const val = Number(simulated[key]);
+            if (!isNaN(val) && typeof simulated[key] !== 'boolean') {
+              const noiseScale = val !== 0 ? Math.abs(val) * 0.02 : 0.5;
+              const delta = (Math.random() - 0.5) * noiseScale;
+              simulated[key] = parseFloat((val + delta).toFixed(2));
+            }
+          }
+        });
+
+        // Ensure default telemetry fields exist if empty
+        if (Object.keys(simulated).length === 0) {
+          if (dev.deviceType === 'pump') {
+            simulated.flow_rate = parseFloat((25.0 + (Math.random() - 0.5)).toFixed(1));
+            simulated.temperature = parseFloat((32.0 + (Math.random() - 0.5) * 0.4).toFixed(1));
+          } else {
+            simulated.s1 = parseFloat((42.5 + (Math.random() - 0.5)).toFixed(1));
+            simulated.temp_c = parseFloat((24.0 + (Math.random() - 0.5) * 0.4).toFixed(1));
+          }
         }
 
         const messagePayload = {
