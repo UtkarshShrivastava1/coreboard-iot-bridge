@@ -1541,16 +1541,33 @@ export default function App() {
                                 </div>
                                 <div className="space-y-1.5 text-2xs pl-6">
                                   {deviceAlarms.map(a => (
-                                    <div key={a.alarm_id} className="flex justify-between items-center">
-                                      <span>• {a.message}</span>
-                                      {tenant.role === 'ADMIN' && (
-                                        <button
-                                          onClick={() => handleAcknowledgeAlarm(a.alarm_id)}
-                                          className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-all text-2xs font-bold font-mono uppercase"
-                                        >
-                                          Acknowledge
-                                        </button>
-                                      )}
+                                    <div key={a.alarm_id} className="flex justify-between items-center gap-2">
+                                      <span className="flex items-center gap-2">
+                                        • {a.message}
+                                        {a.status === 'ACKNOWLEDGED' && (
+                                          <span className="text-amber-300 font-bold text-[9px] uppercase bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded tracking-wide">
+                                            ✓ ACKNOWLEDGED
+                                          </span>
+                                        )}
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        {a.status === 'ACTIVE' && (tenant.role === 'ADMIN' || tenant.role === 'SUPERADMIN') && (
+                                          <button
+                                            onClick={() => handleAcknowledgeAlarm(a.alarm_id)}
+                                            className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-all text-2xs font-bold font-mono uppercase"
+                                          >
+                                            Acknowledge
+                                          </button>
+                                        )}
+                                        {(tenant.role === 'ADMIN' || tenant.role === 'SUPERADMIN') && (
+                                          <button
+                                            onClick={() => handleClearAlarm(a.alarm_id)}
+                                            className="px-2 py-0.5 rounded bg-rose-950/80 border border-rose-500/40 hover:bg-rose-900 text-rose-300 hover:text-white transition-all text-2xs font-bold font-mono uppercase"
+                                          >
+                                            Clear Incident
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
