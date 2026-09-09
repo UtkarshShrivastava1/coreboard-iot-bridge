@@ -74,7 +74,8 @@ export default function App() {
 
   // Initialize Socket.io connection to simulator backend
   useEffect(() => {
-    const s = io('http://localhost:5000');
+    const serverUrl = import.meta.env.VITE_SIMULATOR_SERVER_URL || 'http://localhost:5000';
+    const s = io(serverUrl);
     setSocket(s);
 
     s.on('connect', () => {
