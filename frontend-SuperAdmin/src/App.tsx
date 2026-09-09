@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building2, 
-  Terminal, 
-  RefreshCw, 
-  CheckCircle2, 
-  ShieldAlert, 
-  ShieldCheck, 
-  LogOut, 
-  User, 
-  Lock, 
-  Clock, 
-  Download, 
+import {
+  Building2,
+  Terminal,
+  RefreshCw,
+  CheckCircle2,
+  ShieldAlert,
+  ShieldCheck,
+  LogOut,
+  User,
+  Lock,
+  Clock,
+  Download,
   ArrowRight,
   Database,
   Trash2,
@@ -132,7 +132,8 @@ export default function App() {
   const [onboardError, setOnboardError] = useState<string | null>(null);
   const [onboardSuccess, setOnboardSuccess] = useState<string | null>(null);
 
-  // Tenant Deletion Modal State
+  // Device Provisioning Modal State
+  const [isAddDeviceModalOpen, setIsAddDeviceModalOpen] = useState(false);
   const [deleteTargetTenant, setDeleteTargetTenant] = useState<{ tenantId: string; companyName: string } | null>(null);
   const [isDeletingTenant, setIsDeletingTenant] = useState(false);
   const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
@@ -186,7 +187,7 @@ export default function App() {
     setCredentials(null);
     setDirectError(null);
     setDirectSuccess(null);
-    
+
     setProvLogs([
       `[AWS IoT] Initializing authorization payload...`,
       `[AWS IoT] Target Thing Name: ${directDeviceId}`,
@@ -585,12 +586,11 @@ export default function App() {
   // Dashboard Layout
   return (
     <div className="min-h-screen bg-[#F2EFE7] text-slate-900 flex font-sans overflow-x-hidden">
-      
+
       {/* 1. Left Sidebar */}
-      <aside 
-        className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-[#C8DFDB] transition-all duration-300 flex flex-col justify-between shadow-sm ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        }`}
+      <aside
+        className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-[#C8DFDB] transition-all duration-300 flex flex-col justify-between shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'
+          }`}
       >
         <div>
           {/* Brand Header */}
@@ -606,8 +606,8 @@ export default function App() {
                 </div>
               )}
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-[#C8DFDB]/30 transition-all"
             >
@@ -662,11 +662,10 @@ export default function App() {
           <nav className="px-3 py-2 space-y-2 font-sans text-sm font-semibold">
             <button
               onClick={() => setActiveTab('pending_requests')}
-              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
-                activeTab === 'pending_requests'
-                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
-                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
-              }`}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${activeTab === 'pending_requests'
+                ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
+                }`}
             >
               <Clock className={`w-5 h-5 shrink-0 ${activeTab === 'pending_requests' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && (
@@ -683,23 +682,21 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('tenant_manager')}
-              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
-                activeTab === 'tenant_manager'
-                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
-                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
-              }`}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${activeTab === 'tenant_manager'
+                ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
+                }`}
             >
               <Building2 className={`w-5 h-5 shrink-0 ${activeTab === 'tenant_manager' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
-              {sidebarOpen && <span className="truncate">Tenant Onboarding</span>}
+              {sidebarOpen && <span className="truncate">Tenant Management</span>}
             </button>
 
             <button
               onClick={() => setActiveTab('direct_provision')}
-              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
-                activeTab === 'direct_provision'
-                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
-                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
-              }`}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${activeTab === 'direct_provision'
+                ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
+                }`}
             >
               <PlusCircle className={`w-5 h-5 shrink-0 ${activeTab === 'direct_provision' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && <span className="truncate">Direct Device Provisioning</span>}
@@ -707,11 +704,10 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('tenant_profiles')}
-              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${
-                activeTab === 'tenant_profiles'
-                  ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
-                  : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
-              }`}
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative ${activeTab === 'tenant_profiles'
+                ? 'bg-[#C8DFDB]/60 border border-[#3368A0]/30 text-[#3368A0] font-bold shadow-xs'
+                : 'text-slate-800 hover:text-slate-900 hover:bg-[#C8DFDB]/25 font-semibold'
+                }`}
             >
               <Cpu className={`w-5 h-5 shrink-0 ${activeTab === 'tenant_profiles' ? 'text-[#3368A0]' : 'text-slate-600'}`} />
               {sidebarOpen && <span className="truncate">Tenant Devices & Keys</span>}
@@ -754,7 +750,7 @@ export default function App() {
 
       {/* Main Content View Container */}
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'} flex flex-col min-h-screen`}>
-        
+
         {/* Top Header Command Bar */}
         <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 flex items-center justify-between sticky top-0 z-30 font-sans">
           <div className="flex items-center gap-3">
@@ -795,11 +791,11 @@ export default function App() {
 
         {/* Main Body */}
         <main className="flex-1 p-8 space-y-6">
-          
+
           {/* TAB 1: PENDING PROVISIONING REQUESTS */}
           {activeTab === 'pending_requests' && (
             <div className="space-y-6">
-              
+
               {/* Credentials Download Panel (when approved) */}
               {credentials && (
                 <div className="bg-cyan-50/80 border border-cyan-300 rounded-2xl p-6 shadow-md animate-[fadeIn_0.3s_ease-out] font-mono">
@@ -851,7 +847,7 @@ export default function App() {
               )}
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
+
                 {/* Left: Queue Table */}
                 <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
                   <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-200 font-sans">
@@ -937,7 +933,7 @@ export default function App() {
           {/* TAB 2: TENANT ONBOARDING & MANAGER */}
           {activeTab === 'tenant_manager' && (
             <div className="w-full bg-white border border-[#C8DFDB] rounded-2xl p-6 shadow-xs text-xs font-sans">
-              
+
               {/* Full-width Top Header & Action Controls */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#C8DFDB]">
                 <div>
@@ -1172,7 +1168,7 @@ export default function App() {
               {isOnboardModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
                   <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-md w-full relative animate-in fade-in zoom-in-95 duration-150">
-                    
+
                     {/* Modal Header */}
                     <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
                       <div className="flex items-center gap-3">
@@ -1283,7 +1279,7 @@ export default function App() {
               {deleteTargetTenant && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
                   <div className="bg-white border border-rose-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-150">
-                    
+
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-rose-100">
                       <div className="flex items-center gap-3">
@@ -1378,167 +1374,57 @@ export default function App() {
 
           {/* TAB 3: DIRECT DEVICE PROVISIONING */}
           {activeTab === 'direct_provision' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs font-sans">
+            <div className="w-full bg-white border border-[#C8DFDB] rounded-2xl p-6 shadow-xs text-xs font-sans space-y-6">
               
-              {/* Left: Provisioning Controls & Credentials Download */}
-              <div className="lg:col-span-5 flex flex-col gap-6">
-                
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
-                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
-                      <PlusCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Direct Device Provisioning</h3>
-                      <p className="text-[10px] font-mono text-slate-500 mt-0.5">Provision X.509 certificates & Thing slots directly.</p>
-                    </div>
-                  </div>
-
-                  {directError && (
-                    <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-mono">
-                      <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
-                      <span>{directError}</span>
-                    </div>
-                  )}
-
-                  {directSuccess && (
-                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-mono">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                      <span>{directSuccess}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleDirectProvision} className="space-y-4 font-sans">
-                    <div>
-                      <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Target Tenant Partition</label>
-                      {loadingTenants ? (
-                        <div className="text-slate-500 text-xs font-mono">Loading tenants list...</div>
-                      ) : tenants.length === 0 ? (
-                        <div className="text-rose-600 text-xs font-mono">No onboarded tenants available. Please onboard a tenant first.</div>
-                      ) : (
-                        <select
-                          value={selectedTenantId}
-                          onChange={(e) => setSelectedTenantId(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 font-semibold"
-                        >
-                          {tenants.map(t => (
-                            <option key={t.tenantId} value={t.tenantId}>
-                              {t.companyName} ({t.tenantId})
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Unique Device ID / Thing Name</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. SMART-LOCK-101"
-                        value={directDeviceId}
-                        onChange={(e) => setDirectDeviceId(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 font-semibold font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Device Profile Type (Free-Text / Custom)</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Locking System, Solar Inverter, Pump..."
-                        value={directDeviceType}
-                        onChange={(e) => setDirectDeviceType(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 font-semibold mb-2"
-                      />
-                      <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
-                        <span className="text-slate-500 self-center">Presets:</span>
-                        {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => setDirectDeviceType(preset)}
-                            className={`px-2 py-0.5 rounded border transition-all ${
-                              directDeviceType === preset
-                                ? 'bg-indigo-600 border-indigo-600 text-white font-bold'
-                                : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
-                            }`}
-                          >
-                            {preset}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isProvisioning || tenants.length === 0}
-                      className="w-full py-3.5 rounded-xl font-bold uppercase tracking-wider mt-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 font-mono text-xs"
-                    >
-                      <Database className="h-4 w-4" />
-                      Directly Provision Device
-                    </button>
-                  </form>
+              {/* Full-width Top Header & Action Controls */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#C8DFDB]">
+                <div>
+                  <h3 className="text-base font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <Cpu className="w-5 h-5 text-[#3368A0]" />
+                    Direct Device Provisioning
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Provision X.509 certificates & Thing slots programmatically in AWS IoT Core.
+                  </p>
                 </div>
 
-                {/* Download Credentials Panel */}
-                {credentials && (
-                  <div className="bg-cyan-50/80 border border-cyan-300 rounded-2xl p-5 shadow-sm animate-[fadeIn_0.5s_ease-out]">
-                    <h3 className="text-xs font-bold text-cyan-900 mb-2 flex items-center gap-2 uppercase tracking-wide font-mono">
-                      <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse"></span>
-                      mTLS Credentials Established
-                    </h3>
-                    <p className="text-[10px] text-slate-700 leading-relaxed mb-4 font-sans">
-                      Cryptographic certificates established in AWS IoT Core registry. Download files to flash onto ESP32 simulator client.
-                    </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setDirectError(null);
+                      setDirectSuccess(null);
+                      setIsAddDeviceModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                  >
+                    <PlusCircle className="w-4 h-4 text-white" />
+                    <span>Add New Device</span>
+                  </button>
 
-                    <div className="flex flex-col gap-2 font-mono text-xs">
-                      <button
-                        onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
-                        className="w-full bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-3 rounded-xl flex items-center justify-between transition-all shadow-xs"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Download className="h-4 w-4 text-cyan-700" /> Download Certificate
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-normal">device.pem.crt</span>
-                      </button>
-
-                      <button
-                        onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
-                        className="w-full bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-3 rounded-xl flex items-center justify-between transition-all shadow-xs"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Download className="h-4 w-4 text-cyan-700" /> Download Private Key
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-normal">private.pem.key</span>
-                      </button>
-
-                      <button
-                        onClick={() => downloadCredentialFile(credentials.rootCaPem || DEFAULT_AMAZON_ROOT_CA_PEM, `AmazonRootCA1.pem`)}
-                        className="w-full bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-3 rounded-xl flex items-center justify-between transition-all shadow-xs"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Download className="h-4 w-4 text-cyan-700" /> Download Root CA
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-normal">AmazonRootCA1.pem</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+                  <button
+                    onClick={fetchTenants}
+                    className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#C8DFDB]/30 border border-[#C8DFDB] text-[#3368A0] font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-[#3368A0]" />
+                    <span>Refresh List</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Right: AWS SDK Execution Logs */}
-              <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col h-[520px] font-mono text-slate-100">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
-                  <Terminal className="w-4 h-4 text-cyan-400" />
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">AWS SDK Ingestion Execution Terminal</h3>
+              {/* AWS SDK Execution Logs & Terminal */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col h-[560px] font-mono text-slate-100">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">AWS SDK Ingestion Execution Terminal</h3>
+                  </div>
+                  <span className="text-[10px] text-cyan-400/80 font-mono">STATUS: READY FOR COMMANDS</span>
                 </div>
-                <div className="flex-1 bg-slate-950 rounded-xl p-4 text-[10px] overflow-y-auto border border-slate-800 space-y-2">
+                <div className="flex-1 bg-slate-950 rounded-xl p-4 text-[11px] overflow-y-auto border border-slate-800 space-y-2">
                   {provLogs.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-slate-500 italic">
-                      &gt;&gt; CONSOLE READY. SUBMIT PROVISIONING FORM &lt;&lt;
+                    <div className="h-full flex flex-col items-center justify-center text-slate-500 italic space-y-2">
+                      <Cpu className="w-8 h-8 text-slate-700 animate-pulse" />
+                      <div>&gt;&gt; CONSOLE READY. CLICK "ADD NEW DEVICE" ABOVE TO PROVISION &lt;&lt;</div>
                     </div>
                   ) : (
                     provLogs.map((log, idx) => {
@@ -1558,7 +1444,7 @@ export default function App() {
           {/* TAB 4: TENANT PROFILES & DEVICE REGISTRY */}
           {activeTab === 'tenant_profiles' && (
             <div className="space-y-6 font-sans text-xs">
-              
+
               <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
                 <div className="flex flex-wrap gap-4 items-center justify-between mb-6 pb-4 border-b border-slate-200">
                   <div>
@@ -1567,11 +1453,24 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        if (selectedProfileTenantId) setSelectedTenantId(selectedProfileTenantId);
+                        setDirectError(null);
+                        setDirectSuccess(null);
+                        setIsAddDeviceModalOpen(true);
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                    >
+                      <PlusCircle className="w-4 h-4 text-white" />
+                      <span>Add New Device</span>
+                    </button>
+
                     <label className="text-slate-700 text-xs font-bold uppercase">Select Tenant:</label>
                     <select
                       value={selectedProfileTenantId}
                       onChange={(e) => fetchTenantDevices(e.target.value)}
-                      className="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 font-bold font-mono"
+                      className="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-bold font-mono"
                     >
                       <option value="">-- Choose Tenant Domain --</option>
                       {tenants.map(t => (
@@ -1702,6 +1601,176 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* ADD NEW DEVICE PROVISIONING MODAL DIALOG */}
+              {isAddDeviceModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full relative animate-in fade-in zoom-in-95 duration-150">
+                    
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
+                          <PlusCircle className="w-5 h-5 text-[#3368A0]" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Add New Device (Provisioning)</h3>
+                          <p className="text-[10px] font-mono text-slate-500 mt-0.5">Provision X.509 certificates & Thing slots in AWS IoT Core.</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setIsAddDeviceModalOpen(false)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Alert Banners */}
+                    {directError && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
+                        <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                        <span>{directError}</span>
+                      </div>
+                    )}
+
+                    {directSuccess && (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl mb-4 flex items-center gap-2 font-sans text-xs font-semibold">
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                        <span>{directSuccess}</span>
+                      </div>
+                    )}
+
+                    {/* Device Provisioning Form */}
+                    <form onSubmit={handleDirectProvision} className="space-y-4 text-xs font-sans">
+                      <div>
+                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Target Tenant Partition</label>
+                        {loadingTenants ? (
+                          <div className="text-slate-500 text-xs font-mono">Loading tenants list...</div>
+                        ) : tenants.length === 0 ? (
+                          <div className="text-rose-600 text-xs font-mono">No onboarded tenants available. Please onboard a tenant first.</div>
+                        ) : (
+                          <select
+                            value={selectedTenantId}
+                            onChange={(e) => setSelectedTenantId(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold"
+                          >
+                            {tenants.map(t => (
+                              <option key={t.tenantId} value={t.tenantId}>
+                                {t.companyName} ({t.tenantId})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Unique Device ID / Thing Name</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. SMART-LOCK-101"
+                          value={directDeviceId}
+                          onChange={(e) => setDirectDeviceId(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 mb-1.5 font-bold uppercase tracking-wide text-[10px]">Device Profile Type (Free-Text / Custom)</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Locking System, Solar Inverter, Pump..."
+                          value={directDeviceType}
+                          onChange={(e) => setDirectDeviceType(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 focus:bg-white focus:outline-none focus:border-[#3368A0] font-semibold mb-2"
+                        />
+                        <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
+                          <span className="text-slate-500 self-center">Presets:</span>
+                          {['pump', 'temp_sensor', 'pressure_sensor', 'power_meter', 'smart_lock', 'solar_inverter'].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setDirectDeviceType(preset)}
+                              className={`px-2 py-0.5 rounded border transition-all ${directDeviceType === preset
+                                ? 'bg-[#3368A0] border-[#3368A0] text-white font-bold'
+                                : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                                }`}
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Download Credentials Box Inside Modal */}
+                      {credentials && (
+                        <div className="bg-cyan-50/90 border border-cyan-300 rounded-xl p-4 space-y-2 animate-in fade-in">
+                          <h4 className="text-xs font-bold text-cyan-900 flex items-center gap-2 uppercase tracking-wide font-mono">
+                            <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse"></span>
+                            mTLS Credentials Package Ready
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px] font-mono">
+                            <button
+                              type="button"
+                              onClick={() => downloadCredentialFile(credentials.certificatePem, `device_certificate.crt`)}
+                              className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> Cert</span>
+                              <span className="text-[8px] text-slate-400">.crt</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadCredentialFile(credentials.privateKeyPem, `private_key.key`)}
+                              className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> Key</span>
+                              <span className="text-[8px] text-slate-400">.key</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadCredentialFile(credentials.rootCaPem || DEFAULT_AMAZON_ROOT_CA_PEM, `AmazonRootCA1.pem`)}
+                              className="bg-white border border-cyan-300 text-cyan-900 hover:bg-cyan-50 font-bold p-2 rounded-lg flex items-center justify-between"
+                            >
+                              <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5 text-cyan-700" /> CA</span>
+                              <span className="text-[8px] text-slate-400">.pem</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddDeviceModalOpen(false)}
+                          className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all cursor-pointer text-xs"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isProvisioning || tenants.length === 0}
+                          className="px-5 py-2.5 rounded-xl bg-[#3368A0] hover:bg-[#285382] text-white font-bold tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
+                        >
+                          {isProvisioning ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                              <span>Provisioning...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Database className="w-4 h-4 text-white" />
+                              <span>Directly Provision Device</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+
+                  </div>
+                </div>
+              )}
 
             </div>
           )}
